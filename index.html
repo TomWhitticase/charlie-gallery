@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Charlie — photographs by Alex Sharp</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; font-family: Georgia, 'Times New Roman', serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  canvas { display: block; }
+  #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(12, 11, 10, .74); color: #f4efe6; cursor: pointer; z-index: 20; }
+  #overlay .card { max-width: 460px; padding: 24px; text-align: center; line-height: 1.5; }
+  #overlay h1 { font-weight: normal; letter-spacing: .12em; margin: 0; font-size: 40px; }
+  #overlay .sub { font-style: italic; opacity: .8; margin: 4px 0 22px; }
+  #overlay .keys { font-family: -apple-system, Helvetica, sans-serif; font-size: 13px; opacity: .9;
+    display: grid; grid-template-columns: auto auto; gap: 6px 14px; justify-content: center; text-align: left; }
+  #overlay kbd { border: 1px solid #8a847a; border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; font-size: 12px; }
+  #overlay .go { margin-top: 24px; font-family: -apple-system, Helvetica, sans-serif; font-size: 14px;
+    display: inline-block; border: 1px solid #f4efe6; padding: 8px 20px; letter-spacing: .1em; }
+  #overlay .loading { opacity: .6; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none;
+    mix-blend-mode: difference; z-index: 5; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; }
+  #crosshair::before { left: 8px; top: 0; width: 2px; height: 18px; }
+  #crosshair::after { top: 8px; left: 0; height: 2px; width: 18px; }
+  #label { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); background: rgba(250, 247, 240, .95);
+    color: #222; padding: 10px 18px; border-radius: 2px; font-size: 16px; text-align: center; opacity: 0;
+    transition: opacity .2s; pointer-events: none; box-shadow: 0 2px 14px rgba(0,0,0,.35); z-index: 5; white-space: nowrap; }
+  #label small { display: block; font-family: -apple-system, Helvetica, sans-serif; font-size: 12px; color: #555; margin-top: 3px; }
+  #label .pick { color: #a57a12; font-family: -apple-system, Helvetica, sans-serif; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  /* Pocket Edition style touch controls */
+  #touch { display: none; position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+  body.mobile #touch.on { display: block; }
+  body.mobile #label { bottom: auto; top: 14px; font-size: 14px; }
+  .tbtn { position: absolute; width: 62px; height: 62px; pointer-events: auto; background: rgba(40, 40, 40, .38);
+    border: 2px solid rgba(255,255,255,.45); box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+  .tbtn svg { width: 26px; height: 26px; fill: rgba(255,255,255,.85); }
+  .tbtn.down { background: rgba(255,255,255,.35); }
+  #dpad { position: absolute; left: calc(18px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); width: 186px; height: 186px; }
+  #b-up { left: 62px; top: 0; } #b-down { left: 62px; top: 124px; }
+  #b-left { left: 0; top: 62px; } #b-right { left: 124px; top: 62px; }
+  #b-sneak { left: 62px; top: 62px; border-radius: 50%; }
+  #b-sneak.toggled { background: rgba(255,255,255,.45); }
+  #b-ul { left: 0; top: 0; } #b-ur { left: 124px; top: 0; }
+  #b-ul, #b-ur { display: none; } #dpad.fwd #b-ul, #dpad.fwd #b-ur { display: flex; }
+  #b-jump { right: calc(36px + env(safe-area-inset-right)); bottom: calc(80px + env(safe-area-inset-bottom)); width: 72px; height: 72px; }
+  #b-studio { right: calc(14px + env(safe-area-inset-right)); top: calc(70px + env(safe-area-inset-top)); width: auto; height: 44px;
+    padding: 0 14px; color: #fff; font-family: -apple-system, Helvetica, sans-serif; font-size: 14px; display: none; }
+  #prompt { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,.55);
+    padding: 6px 12px; border-radius: 3px; font-family: -apple-system, Helvetica, sans-serif; font-size: 14px; display: none;
+    z-index: 5; pointer-events: none; }
+  #prompt kbd { border: 1px solid #ccc; border-radius: 3px; padding: 0 5px; }
+
+  /* Frame Studio panel */
+  #studio { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; background: rgba(250, 248, 243, .97); color: #222; z-index: 30;
+    display: none; overflow-y: auto; padding: 16px 18px 24px; box-sizing: border-box; font-family: -apple-system, Helvetica, sans-serif;
+    font-size: 13px; box-shadow: -4px 0 24px rgba(0,0,0,.3); touch-action: pan-y; }
+  #studio.open { display: block; }
+  #studio .st-head { display: flex; justify-content: space-between; align-items: center; font-family: Georgia, serif; font-size: 22px; }
+  #studio button { font: inherit; cursor: pointer; color: inherit; }
+  #st-close { background: #222; color: #fff !important; border: 0; padding: 7px 14px; border-radius: 3px; font-size: 13px; }
+  #studio h4 { margin: 16px 0 6px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #777; font-weight: 600; }
+  .st-spec { margin-top: 10px; padding: 8px 10px; background: #efe9dd; border-radius: 3px; line-height: 1.45; }
+  .st-thumbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .st-thumbs button { padding: 0; border: 2px solid transparent; aspect-ratio: 3 / 2; background-size: cover; background-position: center; border-radius: 2px; }
+  .st-thumbs button.sel { border-color: #c08a1a; }
+  .st-opts { display: flex; flex-wrap: wrap; gap: 4px; }
+  .st-opts button { background: #fff; border: 1px solid #ccc; padding: 5px 9px; border-radius: 14px; font-size: 12px; }
+  #studio .st-opts button.sel { background: #222; color: #fff; border-color: #222; }
+  .st-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .st-swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #bbb; padding: 0; }
+  .st-swatches button.sel { box-shadow: 0 0 0 3px #c08a1a; }
+  .st-swatches button.def { background: linear-gradient(135deg, #fff 45%, #c33 45%, #c33 55%, #fff 55%); }
+  #studio label { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  #studio input[type=range] { flex: 1; }
+  #studio .credit { margin-top: 22px; font-family: Georgia, serif; font-style: italic; color: #777; }
+  @media (orientation: portrait) and (max-width: 700px) {
+    #studio { top: auto; left: 0; width: auto; height: 52%; box-shadow: 0 -4px 24px rgba(0,0,0,.3); }
+    .st-thumbs { grid-template-columns: repeat(6, 1fr); }
+  }
+  #viewer { position: fixed; inset: 0; z-index: 40; background: rgba(10, 10, 10, .94); display: none; flex-direction: column;
+    align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; font-family: -apple-system, Helvetica, sans-serif; color: #eee; }
+  #viewer.open { display: flex; }
+  #viewer img { max-width: 94vw; max-height: calc(100vh - 210px); object-fit: contain; box-shadow: 0 6px 40px rgba(0,0,0,.6); }
+  #viewer .cap { margin-top: 14px; text-align: center; line-height: 1.5; }
+  #viewer .cap i { font-family: Georgia, serif; color: #bbb; }
+  #viewer .btns { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  #viewer .btns a, #viewer .btns button { font: inherit; font-size: 14px; color: #fff; background: transparent; border: 1px solid #888;
+    padding: 8px 16px; border-radius: 3px; text-decoration: none; cursor: pointer; }
+  #viewer .btns .primary { background: #f4efe6; color: #111; border-color: #f4efe6; }
+  #viewer .seg { display: inline-flex; border: 1px solid #888; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  #viewer .seg button { font: inherit; font-size: 13px; background: transparent; color: #ddd; border: 0; padding: 6px 14px; cursor: pointer; }
+  #viewer .seg button.sel { background: #f4efe6; color: #111; }
+  #viewer .btns a[hidden] { display: none; }
+  #b-pause { right: calc(14px + env(safe-area-inset-right)); top: calc(14px + env(safe-area-inset-top)); width: 44px; height: 44px; }
+</style>
+<script src="photos.js"></script>
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                 "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="overlay"><div class="card">
+  <h1>CHARLIE</h1>
+  <div class="sub">a small exhibition · photographs by Alex Sharp</div>
+  <div class="keys" id="keys-desktop">
+    <span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>walk</span>
+    <span>Mouse</span><span>look around</span>
+    <span><kbd>Space</kbd></span><span>jump</span>
+    <span><kbd>Shift</kbd></span><span>sneak (hold)</span>
+    <span><kbd>Ctrl</kbd> or double-tap <kbd>W</kbd></span><span>sprint</span>
+    <span>Click a photo</span><span>view it full screen &amp; download</span>
+    <span><kbd>E</kbd></span><span>open the Frame Studio (when facing it)</span>
+    <span><kbd>Esc</kbd></span><span>pause</span>
+  </div>
+  <div class="keys" id="keys-mobile" style="display:none">
+    <span>D-pad</span><span>walk</span>
+    <span>Drag screen</span><span>look around</span>
+    <span>Double-tap ▲</span><span>sprint</span>
+    <span>Centre button</span><span>sneak</span>
+    <span>Right button</span><span>jump</span>
+    <span>Tap a photo</span><span>view full screen &amp; download</span>
+    <span>Customise</span><span>Frame Studio (sage wall)</span>
+  </div>
+  <div class="go" id="go"><span class="loading">Hanging the pictures…</span></div>
+</div></div>
+<div id="crosshair"></div>
+<div id="label"></div>
+<div id="viewer">
+  <div class="seg"><button id="v-mode-photo" class="sel">Photo</button><button id="v-mode-frame">In its frame</button></div>
+  <img id="v-img" alt="">
+  <div class="cap"><b id="v-title"></b><br><span id="v-desc"></span><br><i>Photograph by Alex Sharp</i></div>
+  <div class="btns">
+    <a id="v-dl" class="primary">Download compressed</a>
+    <a id="v-full" target="_blank" rel="noopener">Download full resolution</a>
+    <a id="v-framed" hidden>Save framed view</a>
+    <button id="v-close">Back to the gallery</button>
+  </div>
+</div>
+<div id="prompt">Press <kbd>E</kbd> to open the Frame Studio</div>
+
+<div id="studio">
+  <div class="st-head"><span>Frame Studio</span><button id="st-close">Done</button></div>
+  <div class="st-spec" id="st-spec"></div>
+  <h4>Photo</h4><div class="st-thumbs" id="st-photos"></div>
+  <h4>Frame</h4><div class="st-opts" id="st-style"></div>
+  <div id="st-fcolor-row"><h4>Frame colour</h4><div class="st-swatches" id="st-fcolor"></div></div>
+  <h4>Print size (long edge)</h4><div class="st-opts" id="st-size"></div>
+  <h4>Crop</h4><div class="st-opts" id="st-crop"></div>
+  <label id="st-fx-row">Crop position <input type="range" id="st-fx" min="0" max="1" step=".01"></label>
+  <div id="st-mat-row"><h4>Mount</h4><div class="st-opts" id="st-mat"></div>
+    <label>Mount width <input type="range" id="st-matw" min="3" max="15" step="1"> <span id="st-matwv"></span></label></div>
+  <h4>Finish</h4><label><input type="checkbox" id="st-bw"> Black &amp; white</label>
+  <h4>Wall colour</h4><div class="st-swatches" id="st-wall"></div>
+  <label>Hanging height <input type="range" id="st-h" min="120" max="200" step="1"> <span id="st-hv"></span></label>
+  <div class="credit">Photographs by Alex Sharp</div>
+</div>
+
+<div id="touch">
+  <div id="dpad">
+    <div class="tbtn" id="b-ul"><svg viewBox="0 0 24 24"><path d="M5 5h11l-4 4 8 8-3 3-8-8-4 4z"/></svg></div>
+    <div class="tbtn" id="b-up"><svg viewBox="0 0 24 24"><path d="M12 4l9 10H3z"/></svg></div>
+    <div class="tbtn" id="b-ur"><svg viewBox="0 0 24 24"><path d="M19 5H8l4 4-8 8 3 3 8-8 4 4z"/></svg></div>
+    <div class="tbtn" id="b-left"><svg viewBox="0 0 24 24"><path d="M4 12l10-9v18z"/></svg></div>
+    <div class="tbtn" id="b-sneak"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg></div>
+    <div class="tbtn" id="b-right"><svg viewBox="0 0 24 24"><path d="M20 12L10 3v18z"/></svg></div>
+    <div class="tbtn" id="b-down"><svg viewBox="0 0 24 24"><path d="M12 20l9-10H3z"/></svg></div>
+  </div>
+  <div class="tbtn" id="b-jump"><svg viewBox="0 0 24 24"><path d="M12 3l8 9h-5v9H9v-9H4z"/></svg></div>
+  <div class="tbtn" id="b-studio">Customise</div>
+  <div class="tbtn" id="b-pause"><svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const V3 = THREE.Vector3;
+const isMobile = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || new URLSearchParams(location.search).has('touch');
+if (isMobile) {
+  document.body.classList.add('mobile');
+  document.getElementById('keys-desktop').style.display = 'none';
+  document.getElementById('keys-mobile').style.display = 'grid';
+}
+
+// ---------- Renderer, scene, camera ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+// handy for debugging from the console
+window.gallery = { renderer, get scene() { return scene; }, get camera() { return camera; } };
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a1a);
+// Reflections for the gold, aluminium and acrylic finishes
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+scene.environmentIntensity = .35;
+
+const BASE_FOV = 70; // Minecraft's default
+const camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth / innerHeight, 0.1, 60);
+camera.rotation.order = 'YXZ';
+
+// Room: 24m x 14m, 4.2m ceiling, with a free-standing partition in the middle.
+const RW = 24, RD = 14, RH = 4.2, HX = RW / 2, HZ = RD / 2;
+const PL = 8, PT = 0.15, PH = 3.2;
+
+// ---------- Procedural textures ----------
+function floorTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 1024;
+  const g = c.getContext('2d'), rows = 8, ph = 1024 / rows;
+  for (let i = 0; i < rows; i++) {
+    let x = -Math.random() * 600;
+    while (x < 1024) {
+      const len = 420 + Math.random() * 420, tone = 150 + Math.random() * 34;
+      g.fillStyle = `rgb(${tone | 0},${tone * .74 | 0},${tone * .5 | 0})`;
+      g.fillRect(x, i * ph, len, ph);
+      for (let k = 0; k < 26; k++) {
+        const y = i * ph + Math.random() * ph;
+        g.strokeStyle = `rgba(70,40,15,${.04 + Math.random() * .07})`; g.lineWidth = 1 + Math.random();
+        g.beginPath(); g.moveTo(x, y);
+        g.bezierCurveTo(x + len * .3, y + (Math.random() - .5) * 8, x + len * .7, y + (Math.random() - .5) * 8, x + len, y);
+        g.stroke();
+      }
+      g.fillStyle = 'rgba(45,25,10,.55)'; g.fillRect(x, i * ph, 2, ph);
+      x += len;
+    }
+    g.fillStyle = 'rgba(45,25,10,.5)'; g.fillRect(0, i * ph, 1024, 2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(RW / 5, RD / 5); t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+function grainTexture() {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, 64, 512);
+  for (let k = 0; k < 60; k++) {
+    g.strokeStyle = `rgba(0,0,0,${.05 + Math.random() * .12})`; g.lineWidth = .5 + Math.random() * 1.5;
+    const x = Math.random() * 64; g.beginPath(); g.moveTo(x, 0);
+    g.bezierCurveTo(x + (Math.random() - .5) * 8, 170, x + (Math.random() - .5) * 8, 340, x, 512); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+const GRAIN = grainTexture();
+
+// ---------- Room ----------
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD),
+  new THREE.MeshStandardMaterial({ map: floorTexture(), roughness: .55 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD), new THREE.MeshStandardMaterial({ color: 0xf2f0eb, roughness: 1 }));
+ceiling.rotation.x = Math.PI / 2; ceiling.position.y = RH; scene.add(ceiling);
+
+// Rooflights for a bit of daylight feel
+for (const x of [-7, 0, 7]) {
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.2), new THREE.MeshBasicMaterial({ color: 0xfbfaf6 }));
+  sky.rotation.x = Math.PI / 2; sky.position.set(x, RH - .01, x === 0 ? -3.6 : 0); scene.add(sky);
+}
+
+// Walls: `along` points to the viewer's right when facing the wall.
+const WALLS = {
+  north: { origin: new V3(0, 0, -HZ), along: new V3(1, 0, 0), normal: new V3(0, 0, 1), len: RW, h: RH, color: 0xf4f2ee, name: 'Gallery white' },
+  south: { origin: new V3(0, 0, HZ), along: new V3(-1, 0, 0), normal: new V3(0, 0, -1), len: RW, h: RH, color: 0xece4d6, name: 'Warm stone' },
+  west:  { origin: new V3(-HX, 0, 0), along: new V3(0, 0, -1), normal: new V3(1, 0, 0), len: RD, h: RH, color: 0x667a66, name: 'Sage green' },
+  east:  { origin: new V3(HX, 0, 0), along: new V3(0, 0, 1), normal: new V3(-1, 0, 0), len: RD, h: RH, color: 0x26344c, name: 'Deep navy' },
+  partN: { origin: new V3(0, 0, -PT), along: new V3(-1, 0, 0), normal: new V3(0, 0, -1), len: PL, h: PH, color: 0xcfc8bd, name: 'Greige' },
+  partS: { origin: new V3(0, 0, PT), along: new V3(1, 0, 0), normal: new V3(0, 0, 1), len: PL, h: PH, color: 0xf4f2ee, name: 'Gallery white' },
+};
+const rotFor = n => Math.atan2(n.x, n.z);
+// Distance of the pictures off the wall; light pools sit 5mm behind them, studio paint 10mm behind.
+const ART_OFF = .016;
+const skirtMat = new THREE.MeshStandardMaterial({ color: 0xf6f5f2, roughness: .6 });
+
+for (const w of Object.values(WALLS)) {
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w.len, w.h),
+    new THREE.MeshStandardMaterial({ color: w.color, roughness: .95 }));
+  mesh.position.copy(w.origin).addScaledVector(w.normal, .001); mesh.position.y = w.h / 2;
+  mesh.rotation.y = rotFor(w.normal); scene.add(mesh);
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(w.len, .12, .015), skirtMat);
+  skirt.position.copy(w.origin).addScaledVector(w.normal, .008); skirt.position.y = .06;
+  skirt.rotation.y = rotFor(w.normal); scene.add(skirt);
+}
+const partCap = new THREE.Mesh(new THREE.BoxGeometry(PL, .01, PT * 2), new THREE.MeshStandardMaterial({ color: 0xe8e4dc }));
+partCap.position.y = PH; scene.add(partCap);
+for (const s of [-1, 1]) {
+  const end = new THREE.Mesh(new THREE.PlaneGeometry(PT * 2, PH), new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: .95 }));
+  end.position.set(s * PL / 2, PH / 2, 0); end.rotation.y = s * Math.PI / 2; scene.add(end);
+}
+
+// Benches (you can jump on them)
+const BENCHES = [];
+function addBench(x, z) {
+  const g = new THREE.Group();
+  const oak = new THREE.MeshStandardMaterial({ color: 0xb98a5a, map: GRAIN, roughness: .6 });
+  const blk = new THREE.MeshStandardMaterial({ color: 0x1b1b1b, roughness: .5, metalness: .4 });
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(2.0, .06, .5), oak); seat.position.y = .45; g.add(seat);
+  for (const sx of [-.85, .85]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(.05, .42, .44), blk); leg.position.set(sx, .21, 0); g.add(leg);
+  }
+  g.position.set(x, 0, z); scene.add(g);
+  BENCHES.push({ minX: x - 1, maxX: x + 1, minZ: z - .25, maxZ: z + .25, top: .48 });
+}
+addBench(0, -3.6); addBench(0, 3.4);
+
+// ---------- Lighting ----------
+scene.add(new THREE.HemisphereLight(0xfffaf2, 0x8a7460, 2.6));
+scene.add(new THREE.AmbientLight(0xfff6ea, 1.0));
+// Soft daylight from the rooflights (one cheap directional light instead of many real-time lamps)
+const sun = new THREE.DirectionalLight(0xfffaf0, .6); sun.position.set(2, 10, 3); scene.add(sun);
+
+// Picture lights are faked with additive "light pools" painted on the wall: they look like
+// spotlights but cost almost nothing, unlike two dozen real SpotLights evaluated per pixel.
+const POOL_TEX = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,236,205,1)'); gr.addColorStop(.45, 'rgba(255,236,205,.55)'); gr.addColorStop(1, 'rgba(255,236,205,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const poolMat = new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false,
+  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+const POOL_GEO = new THREE.PlaneGeometry(1, 1);
+function placePool(pool, target, normal, radius) {
+  pool.position.copy(target).addScaledVector(normal, -.005); pool.position.y = target.y + radius * .35;
+  pool.scale.set(radius * 2.7, radius * 3.4, 1); pool.rotation.y = rotFor(normal);
+}
+const fixtureMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: .4, metalness: .6 });
+const lensMat = new THREE.MeshBasicMaterial({ color: 0xfff4dc });
+function spotOn(target, normal, radius, out = 1.4) {
+  const pos = target.clone().addScaledVector(normal, out); pos.y = RH - .35;
+  const pool = new THREE.Mesh(POOL_GEO, poolMat); placePool(pool, target, normal, radius); scene.add(pool);
+  const can = new THREE.Mesh(new THREE.CylinderGeometry(.06, .07, .22, 16), fixtureMat);
+  can.position.copy(pos); can.lookAt(target); can.rotateX(Math.PI / 2); scene.add(can);
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(.05, 16), lensMat);
+  lens.position.copy(pos).addScaledVector(target.clone().sub(pos).normalize(), .111); lens.lookAt(target); scene.add(lens);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .35, 6), fixtureMat);
+  stem.position.set(pos.x, RH - .175, pos.z); scene.add(stem);
+  return pool;
+}
+
+// ---------- Frames ----------
+const WHITE = 0xf8f6f0, CREAM = 0xeee3cc, BLACK = 0x1c1c1c;
+const MAT_NAMES = { [WHITE]: 'white', [CREAM]: 'cream', [BLACK]: 'black' };
+const ASPECTS = { '3:2': 1.5, '2:3': 2 / 3, '4:5': .8, '1:1': 1 };
+const CROP_NAMES = { '3:2': '', '2:3': 'portrait crop', '4:5': '4:5 portrait crop', '1:1': 'square crop' };
+const STYLES = {
+  'black-thin':    { name: 'Slim black wood frame', w: .022, d: .03, color: 0x161616, rough: .45 },
+  'white-gallery': { name: 'White gallery frame', w: .03, d: .035, color: 0xf3f3f0, rough: .5 },
+  'oak':           { name: 'Natural oak frame', w: .045, d: .035, color: 0xd2a676, rough: .7, wood: true },
+  'walnut':        { name: 'Dark walnut frame', w: .055, d: .04, color: 0x6a452b, rough: .6, wood: true },
+  'gold':          { name: 'Ornate antique gold frame', w: .095, d: .055, color: 0xc9a14b, rough: .32, metal: .9, ornate: true },
+  'silver':        { name: 'Brushed aluminium frame', w: .012, d: .025, color: 0xc4c8cc, rough: .3, metal: 1 },
+  'navy':          { name: 'Painted navy frame', w: .035, d: .03, color: 0x22304d, rough: .55 },
+  'sage':          { name: 'Painted sage frame', w: .035, d: .03, color: 0x95a88f, rough: .6 },
+  'canvas':        { name: 'Gallery-wrapped canvas', canvas: true, d: .04 },
+  'float':         { name: 'Canvas in a black float frame', float: true, d: .045 },
+  'acrylic':       { name: 'Acrylic face-mount', acrylic: true },
+};
+
+const images = {};
+function texFor(id, aspect, bw, fx = .5, fy = .5, img = images[id]) {
+  let src = img;
+  if (bw) {
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d'); g.filter = 'grayscale(1) contrast(1.08)'; g.drawImage(img, 0, 0); src = c;
+  }
+  const t = new THREE.Texture(src); t.needsUpdate = true;
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const ia = img.width / img.height;
+  if (aspect < ia) {
+    const r = aspect / ia; t.repeat.set(r, 1); t.offset.set(THREE.MathUtils.clamp(fx - r / 2, 0, 1 - r), 0);
+  } else {
+    const r = ia / aspect; t.repeat.set(1, r); t.offset.set(0, THREE.MathUtils.clamp((1 - fy) - r / 2, 0, 1 - r));
+  }
+  return t;
+}
+
+// Rectangular ring of four bars around an opening iw x ih, sitting at z0..z0+d.
+function ring(iw, ih, fw, d, mat, z0 = 0) {
+  const g = new THREE.Group(), ow = iw + 2 * fw;
+  const bars = [[ow, fw, 0, (ih + fw) / 2], [ow, fw, 0, -(ih + fw) / 2], [fw, ih, -(iw + fw) / 2, 0], [fw, ih, (iw + fw) / 2, 0]];
+  for (const [bw, bh, x, y] of bars) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, d), mat); m.position.set(x, y, z0 + d / 2); g.add(m);
+  }
+  return g;
+}
+
+function buildArt(p) {
+  const st = STYLES[p.style], crop = p.crop || '3:2', aspect = ASPECTS[crop];
+  const pw = p.w, ph = pw / aspect;
+  const photoMat = new THREE.MeshStandardMaterial({ map: texFor(p.id, aspect, p.bw, p.fx, p.fy), roughness: .5 });
+  const g = new THREE.Group();
+  let ow, oh;
+
+  if (st.canvas) {
+    const side = new THREE.MeshStandardMaterial({ color: 0xefede8, roughness: .9 });
+    const box = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, st.d), [side, side, side, side, photoMat, side]);
+    box.position.z = st.d / 2; g.add(box); ow = pw; oh = ph;
+  } else if (st.float) {
+    const gap = .015, fw = .014, blk = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .5 });
+    const side = new THREE.MeshStandardMaterial({ color: 0xefede8, roughness: .9 });
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(pw + 2 * gap, ph + 2 * gap), blk); back.position.z = .002; g.add(back);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, .032), [side, side, side, side, photoMat, side]);
+    box.position.z = .006 + .016; g.add(box);
+    g.add(ring(pw + 2 * gap, ph + 2 * gap, fw, st.d, blk));
+    ow = pw + 2 * gap + 2 * fw; oh = ph + 2 * gap + 2 * fw;
+  } else if (st.acrylic) {
+    const backer = new THREE.Mesh(new THREE.BoxGeometry(pw * .9, ph * .9, .02), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    backer.position.z = .01; g.add(backer);
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), photoMat); photo.position.z = .028; g.add(photo);
+    const acr = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, .008), new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, transparent: true, opacity: .12, roughness: .03, clearcoat: 1, clearcoatRoughness: .02, metalness: 0 }));
+    acr.position.z = .033; g.add(acr);
+    photoMat.roughness = .15;
+    ow = pw; oh = ph;
+  } else {
+    const m = p.mat || 0, matColor = p.matColor ?? WHITE;
+    const iw = pw + 2 * m, ih = ph + 2 * m;
+    const frameMat = new THREE.MeshStandardMaterial({ color: p.frameColor ?? st.color, roughness: st.rough, metalness: st.metal || 0, map: st.wood ? GRAIN : null });
+    const backing = new THREE.Mesh(new THREE.PlaneGeometry(iw, ih), new THREE.MeshStandardMaterial({ color: m ? matColor : 0x222222, roughness: .95 }));
+    backing.position.z = .004; g.add(backing);
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), photoMat); photo.position.z = .007; g.add(photo);
+    if (m) {
+      const matMat = new THREE.MeshStandardMaterial({ color: matColor, roughness: .95 });
+      g.add(ring(pw + .006, ph + .006, m - .003, .004, matMat, .007));
+      // bevelled core of the mount
+      g.add(ring(pw, ph, .003, .003, new THREE.MeshStandardMaterial({ color: matColor === BLACK ? 0xf2f0ea : 0xfdfcf8 }), .007));
+    }
+    g.add(ring(iw, ih, st.w, st.d, frameMat));
+    if (st.ornate) {
+      const lip = new THREE.MeshStandardMaterial({ color: 0xe0bd6a, roughness: .25, metalness: .95 });
+      const dark = new THREE.MeshStandardMaterial({ color: 0x8c6a2c, roughness: .45, metalness: .8 });
+      g.add(ring(iw, ih, st.w * .28, st.d + .012, lip));
+      g.add(ring(iw + st.w * .56, ih + st.w * .56, st.w * .18, st.d + .02, dark));
+      g.add(ring(iw + st.w * 1.6, ih + st.w * 1.6, st.w * .2, st.d + .008, lip));
+    }
+    ow = iw + 2 * st.w; oh = ih + 2 * st.w;
+  }
+
+  const bits = [st.name];
+  if (p.mat) bits.push(`${MAT_NAMES[p.matColor ?? WHITE]} mount`);
+  if (CROP_NAMES[crop]) bits.push(CROP_NAMES[crop]);
+  if (p.colorName) bits.push(`${p.colorName} finish`);
+  if (p.bw) bits.push('black & white');
+  if (p.note) bits.push(p.note);
+  g.userData.art = { id: p.id, title: TITLES[p.id], size: `${Math.round(ow * 100)} × ${Math.round(oh * 100)} cm`, desc: bits.join(' · '), pick: p.pick };
+  g.userData.outer = { w: ow, h: oh };
+  g.userData.photo = { id: p.id, mat: photoMat, args: [aspect, p.bw, p.fx, p.fy] };
+  return g;
+}
+
+function plaque(art) {
+  const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fbfaf7'; g.fillRect(0, 0, 320, 180);
+  g.fillStyle = '#222';
+  let fs = 34; do g.font = `italic ${fs}px Georgia`; while (g.measureText(art.title).width > 285 && --fs > 18);
+  g.fillText(art.title, 20, 50);
+  g.font = '20px Helvetica'; g.fillStyle = '#555'; g.fillText(`Charlie · DSC_${art.id}`, 20, 82);
+  g.fillText(art.size, 20, 110);
+  const words = art.desc.split(' · ')[0];
+  g.font = '17px Helvetica'; g.fillText(words, 20, 140);
+  g.font = 'italic 16px Georgia'; g.fillStyle = '#777'; g.fillText('Photo: Alex Sharp', 20, 168);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(.16, .09, .004),
+    [null, null, null, null, new THREE.MeshStandardMaterial({ map: t, roughness: .7 }), null].map(x => x || new THREE.MeshStandardMaterial({ color: 0xdddddd })));
+  return m;
+}
+
+// ---------- Titles ----------
+const TITLES = {
+  '0410': 'Sunlit Patience', '0411': 'Waiting for the Ball', '0412': 'Eyes on the Treat', '0413': 'By the Water',
+  '0440': 'Afternoon Grin', '0442': 'Tail in Motion', '0461': 'Begging, Professionally', '0479': 'At Rest, On Watch',
+  '0481': 'The Lookout', '0484': 'Lord of the Barn', '0487': 'Small Dog, Old Barn', '0491': 'Coming Over to Say Hello',
+  '0535': 'Hopeful', '0538': 'Who, Me?', '0585': 'Riverbank', '0606': 'Profile in Autumn', '0608': 'Nose to the Sky',
+  '0610': 'Ears Up, Feet Off', '0615': 'The Leap', '0625': 'Hilltop Smile', '0628': 'Far Field', '0629': 'Down the Valley',
+  '0640': 'Treat Incoming', '0641': 'A Very Good Sit', '0646': 'Pure Joy', '0649': 'The Big Grin', '0650': 'Grin, Take Two',
+};
+
+// ---------- The hang ----------
+const HANG = [
+  // Partition, facing the entrance: the hero piece
+  { id: '0535', wall: 'partS', u: 0, w: 1.2, style: 'canvas', pick: true },
+  { id: '0461', wall: 'partS', u: -2.9, w: .42, crop: '4:5', style: 'black-thin', mat: .08, fx: .62, note: 'quick edit of the original' },
+  { id: '0538', wall: 'partS', u: 2.9, w: .55, crop: '1:1', style: 'walnut', mat: .07, matColor: CREAM, fx: .42, note: 'quick edit of the original' },
+  // Partition, back side
+  { id: '0479', wall: 'partN', u: -1.9, w: .9, style: 'walnut', mat: .09, matColor: CREAM, pick: true },
+  { id: '0481', wall: 'partN', u: 1.9, w: .6, style: 'black-thin', mat: .1, bw: true },
+  // North wall (gallery white)
+  { id: '0610', wall: 'north', u: -9.6, w: 1.0, style: 'white-gallery', mat: .1, pick: true },
+  { id: '0615', wall: 'north', u: -5.8, w: .5, crop: '2:3', style: 'black-thin', mat: .08, fx: .32 },
+  { id: '0484', wall: 'north', u: -2, w: 1.3, style: 'oak' },
+  { id: '0606', wall: 'north', u: 2, w: .55, crop: '1:1', style: 'navy', mat: .07, fx: .55 },
+  { id: '0608', wall: 'north', u: 5.8, w: .45, crop: '2:3', style: 'sage', mat: .07, matColor: CREAM, fx: .54 },
+  { id: '0640', wall: 'north', u: 9.6, w: .65, style: 'gold', mat: .07, matColor: CREAM },
+  // South wall (warm stone)
+  { id: '0649', wall: 'south', u: -9.6, w: .9, style: 'acrylic' },
+  { id: '0650', wall: 'south', u: -5.8, w: .5, style: 'silver', mat: .09, bw: true },
+  { id: '0625', wall: 'south', u: -2, w: .8, style: 'float' },
+  { id: '0628', wall: 'south', u: 2, w: .35, style: 'white-gallery', mat: .12 },
+  { id: '0629', wall: 'south', u: 5.8, w: .7, style: 'walnut', mat: .06, matColor: BLACK },
+  { id: '0646', wall: 'south', u: 9.6, w: 1.1, style: 'black-thin' },
+  // West wall (sage green)
+  { id: '0412', wall: 'west', u: -4.6, w: .8, style: 'gold' },
+  { id: '0585', wall: 'west', u: 4.6, w: .5, crop: '4:5', style: 'white-gallery', mat: .08, fx: .42 },
+  // (the Frame Studio occupies the middle of the west wall)
+  // East wall (deep navy): two singles either side of a salon-style cluster, like a gallery wall at home
+  { id: '0641', wall: 'east', u: -4.6, w: .75, style: 'oak', mat: .09, matColor: CREAM },
+  { id: '0413', wall: 'east', u: 4.6, w: .7, style: 'canvas', note: 'quick edit of the original' },
+  { id: '0410', wall: 'east', u: -1.15, v: 2.02, w: .42, style: 'black-thin', mat: .06, cluster: true },
+  { id: '0411', wall: 'east', u: 0, v: 2.1, w: .3, crop: '4:5', style: 'oak', mat: .05, matColor: CREAM, fx: .6, cluster: true },
+  { id: '0440', wall: 'east', u: 1.12, v: 2.02, w: .36, style: 'gold', cluster: true },
+  { id: '0442', wall: 'east', u: -1.1, v: 1.18, w: .3, crop: '1:1', style: 'white-gallery', mat: .05, fx: .55, cluster: true },
+  { id: '0487', wall: 'east', u: 0, v: 1.22, w: .45, style: 'silver', mat: .06, bw: true, cluster: true },
+  { id: '0491', wall: 'east', u: 1.15, v: 1.18, w: .4, style: 'navy', mat: .05, cluster: true },
+];
+
+const artGroups = [];
+
+// Swap in the 1600px photo for whatever you're looking at up close; keep at most 4 HD at once.
+const hdImages = {}, hdActive = [];
+const loadHD = id => hdImages[id] ??= new Promise((res, rej) => {
+  const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = `hd/${id}.jpg`;
+});
+function swapTex(g, img) {
+  const ph = g.userData.photo, old = ph.mat.map;
+  ph.mat.map = texFor(ph.id, ...ph.args, img); ph.mat.needsUpdate = true; old.dispose();
+}
+function focusHD(g) {
+  if (g.userData.hd) { hdActive.push(...hdActive.splice(hdActive.indexOf(g), 1)); return Promise.resolve(); }
+  return g.userData.hdLoading ??= loadHD(g.userData.photo.id).then(img => {
+    if (!g.parent) return;
+    swapTex(g, img); g.userData.hd = true; hdActive.push(g);
+    while (hdActive.length > 4) {
+      const o = hdActive.shift(); o.userData.hd = false; o.userData.hdLoading = null;
+      if (o.parent) swapTex(o, images[o.userData.photo.id]);
+    }
+  }).catch(() => { g.userData.hdLoading = null; });
+}
+function hang() {
+  for (const p of HANG) {
+    const wall = WALLS[p.wall], art = buildArt(p);
+    const v = p.v ?? 1.55;
+    const pos = wall.origin.clone().addScaledVector(wall.along, p.u).addScaledVector(wall.normal, ART_OFF);
+    pos.y = v;
+    art.position.copy(pos); art.rotation.y = rotFor(wall.normal); scene.add(art); artGroups.push(art);
+    if (!p.cluster) {
+      spotOn(pos.clone(), wall.normal, Math.hypot(art.userData.outer.w, art.userData.outer.h) / 2, wall === WALLS.partS || wall === WALLS.partN ? 1.3 : 1.4);
+      const pl = plaque(art.userData.art);
+      pl.position.copy(pos).addScaledVector(wall.along, art.userData.outer.w / 2 + .22).addScaledVector(wall.normal, .002);
+      pl.position.y = 1.32; pl.rotation.y = rotFor(wall.normal); scene.add(pl);
+    }
+  }
+  const e = WALLS.east, t = e.origin.clone().addScaledVector(e.normal, ART_OFF); t.y = 1.6;
+  spotOn(t, e.normal, 1.5, 1.6);
+}
+
+// ---------- Minecraft-style movement ----------
+const controls = new PointerLockControls(camera, document.body);
+const EYE = 1.62, SNEAK_EYE = 1.27, RADIUS = .3;
+const WALK = 4.317, SPRINT = 5.612, SNEAK = 1.295; // blocks (metres) per second
+const GRAVITY = 32, JUMP_V = 8.9;                 // roughly a 1.25 block jump
+const player = { pos: new V3(HX - .9, 0, HZ - .9), vy: 0, onGround: true, sprinting: false, eye: EYE, vel: new V3() };
+camera.position.set(player.pos.x, EYE, player.pos.z);
+camera.rotation.y = Math.atan2(player.pos.x, player.pos.z); // face the centre of the room
+// Optional start point, e.g. index.html#x=0&z=5.8&yaw=0 (yaw in degrees)
+const at = new URLSearchParams(location.hash.slice(1));
+if (at.has('x')) {
+  player.pos.set(+at.get('x'), 0, +(at.get('z') ?? 0));
+  camera.position.set(player.pos.x, EYE, player.pos.z);
+  camera.rotation.y = THREE.MathUtils.degToRad(+(at.get('yaw') ?? 0));
+}
+
+const keys = {};
+let lastW = 0;
+addEventListener('keydown', e => {
+  if (e.code === 'KeyW' && !e.repeat) {
+    const now = performance.now(); if (now - lastW < 300) player.sprinting = true; lastW = now;
+  }
+  if (e.code === 'ControlLeft' || e.code === 'ControlRight') player.sprinting = true;
+  if (e.code === 'Space') e.preventDefault();
+  keys[e.code] = true;
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+const touch = { f: 0, s: 0, jump: false, sneak: false };
+let active = false;
+
+function input() {
+  if (isMobile) return { f: touch.f, s: touch.s, jump: touch.jump, sneak: touch.sneak };
+  return {
+    f: (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0),
+    s: (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0),
+    jump: !!keys.Space, sneak: !!(keys.ShiftLeft || keys.ShiftRight),
+  };
+}
+
+function groundAt(x, z, feetY) {
+  let g = 0;
+  for (const b of BENCHES)
+    if (x > b.minX - RADIUS * .5 && x < b.maxX + RADIUS * .5 && z > b.minZ - RADIUS * .5 && z < b.maxZ + RADIUS * .5 && feetY >= b.top - .1) g = Math.max(g, b.top);
+  return g;
+}
+
+function collide(p) {
+  p.x = THREE.MathUtils.clamp(p.x, -HX + RADIUS, HX - RADIUS);
+  p.z = THREE.MathUtils.clamp(p.z, -HZ + RADIUS, HZ - RADIUS);
+  const boxes = [{ minX: -PL / 2, maxX: PL / 2, minZ: -PT, maxZ: PT, top: PH }, ...BENCHES];
+  for (const b of boxes) {
+    if (p.y >= b.top - .01) continue; // standing on top of it
+    const x0 = b.minX - RADIUS, x1 = b.maxX + RADIUS, z0 = b.minZ - RADIUS, z1 = b.maxZ + RADIUS;
+    if (p.x > x0 && p.x < x1 && p.z > z0 && p.z < z1) {
+      const dx = Math.min(p.x - x0, x1 - p.x), dz = Math.min(p.z - z0, z1 - p.z);
+      if (dx < dz) p.x = p.x - x0 < x1 - p.x ? x0 : x1;
+      else p.z = p.z - z0 < z1 - p.z ? z0 : z1;
+    }
+  }
+}
+
+const fwd = new V3(), right = new V3();
+function step(dt) {
+  const inp = input();
+  if (inp.f <= 0 || inp.sneak) player.sprinting = false;
+  const speed = inp.sneak ? SNEAK : player.sprinting ? SPRINT : WALK;
+
+  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+  right.crossVectors(fwd, camera.up).normalize();
+  const wish = new V3().addScaledVector(fwd, inp.f).addScaledVector(right, inp.s);
+  if (wish.lengthSq() > 1) wish.normalize();
+  wish.multiplyScalar(speed);
+  // Minecraft-ish momentum: quick to accelerate, slides a touch when you let go (less in the air)
+  const k = 1 - Math.exp(-(player.onGround ? 14 : 3) * dt);
+  player.vel.x += (wish.x - player.vel.x) * k;
+  player.vel.z += (wish.z - player.vel.z) * k;
+
+  const p = player.pos;
+  const prev = p.clone();
+  p.x += player.vel.x * dt; p.z += player.vel.z * dt;
+  // Sneaking stops you walking off the edge of a bench, as in Minecraft
+  if (inp.sneak && player.onGround && p.y > 0 && groundAt(p.x, p.z, p.y) < p.y - .01) { p.x = prev.x; p.z = prev.z; player.vel.set(0, 0, 0); }
+  collide(p);
+
+  if (inp.jump && player.onGround) { player.vy = JUMP_V; player.onGround = false; }
+  player.vy -= GRAVITY * dt;
+  p.y += player.vy * dt;
+  const ground = groundAt(p.x, p.z, p.y);
+  if (p.y <= ground) { p.y = ground; player.vy = 0; player.onGround = true; } else player.onGround = false;
+
+  player.eye += ((inp.sneak ? SNEAK_EYE : EYE) - player.eye) * (1 - Math.exp(-20 * dt));
+  camera.position.set(p.x, p.y + player.eye, p.z);
+
+  const targetFov = BASE_FOV * (player.sprinting && player.vel.length() > WALK ? 1.15 : 1);
+  camera.fov += (targetFov - camera.fov) * (1 - Math.exp(-10 * dt));
+  camera.updateProjectionMatrix();
+}
+
+// ---------- Touch controls (Pocket Edition style) ----------
+function bindHold(id, on, off) {
+  const el = document.getElementById(id);
+  const down = e => { e.preventDefault(); el.classList.add('down'); on(); };
+  const up = e => { e.preventDefault(); el.classList.remove('down'); off(); };
+  el.addEventListener('touchstart', down, { passive: false });
+  el.addEventListener('touchend', up); el.addEventListener('touchcancel', up);
+}
+if (isMobile) {
+  const dpad = document.getElementById('dpad');
+  let lastUp = 0;
+  bindHold('b-up', () => {
+    const now = performance.now(); if (now - lastUp < 300) player.sprinting = true; lastUp = now;
+    touch.f = 1; dpad.classList.add('fwd');
+  }, () => { touch.f = 0; setTimeout(() => { if (touch.f <= 0) dpad.classList.remove('fwd'); }, 250); });
+  bindHold('b-ul', () => { touch.f = 1; touch.s = -1; }, () => { touch.f = 0; touch.s = 0; dpad.classList.remove('fwd'); });
+  bindHold('b-ur', () => { touch.f = 1; touch.s = 1; }, () => { touch.f = 0; touch.s = 0; dpad.classList.remove('fwd'); });
+  bindHold('b-down', () => touch.f = -1, () => touch.f = 0);
+  bindHold('b-left', () => touch.s = -1, () => touch.s = 0);
+  bindHold('b-right', () => touch.s = 1, () => touch.s = 0);
+  bindHold('b-jump', () => touch.jump = true, () => touch.jump = false);
+  const sneakBtn = document.getElementById('b-sneak');
+  sneakBtn.addEventListener('touchstart', e => {
+    e.preventDefault(); touch.sneak = !touch.sneak; sneakBtn.classList.toggle('toggled', touch.sneak);
+  }, { passive: false });
+  document.getElementById('b-pause').addEventListener('touchstart', e => { e.preventDefault(); pause(); }, { passive: false });
+
+  // Drag anywhere else to look
+  let lookId = null, lx = 0, ly = 0;
+  const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (!active || lookId !== null) return;
+    const t = e.changedTouches[0]; lookId = t.identifier; lx = t.clientX; ly = t.clientY;
+  }, { passive: true });
+  renderer.domElement.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) if (t.identifier === lookId) {
+      euler.setFromQuaternion(camera.quaternion);
+      euler.y -= (t.clientX - lx) * .0055; euler.x -= (t.clientY - ly) * .0055;
+      euler.x = THREE.MathUtils.clamp(euler.x, -Math.PI / 2 + .01, Math.PI / 2 - .01);
+      camera.quaternion.setFromEuler(euler); lx = t.clientX; ly = t.clientY;
+    }
+    e.preventDefault();
+  }, { passive: false });
+  const endLook = e => { for (const t of e.changedTouches) if (t.identifier === lookId) lookId = null; };
+  renderer.domElement.addEventListener('touchend', endLook);
+  renderer.domElement.addEventListener('touchcancel', endLook);
+}
+
+// ---------- Start / pause ----------
+const overlay = document.getElementById('overlay'), touchUI = document.getElementById('touch');
+function start() {
+  if (!overlay.dataset.ready) return;
+  if (isMobile) {
+    active = true; overlay.style.display = 'none'; touchUI.classList.add('on');
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  } else controls.lock();
+}
+function pause() {
+  active = false; overlay.style.display = 'flex'; touchUI.classList.remove('on');
+  Object.assign(touch, { f: 0, s: 0, jump: false });
+  for (const k in keys) keys[k] = false;
+}
+overlay.addEventListener('click', start);
+controls.addEventListener('lock', () => { active = true; overlay.style.display = 'none'; });
+controls.addEventListener('unlock', () => { if (!studioOpen && !viewerOpen) pause(); });
+// If the browser refuses pointer lock, enter anyway and look by dragging the mouse
+let dragLook = false, dragging = false;
+document.addEventListener('pointerlockerror', () => { dragLook = true; if (studioOpen || viewerOpen) return; active = true; overlay.style.display = 'none'; });
+renderer.domElement.addEventListener('mousedown', () => { dragging = dragLook && active; });
+addEventListener('mouseup', () => { dragging = false; });
+addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const eu = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(camera.quaternion);
+  eu.y -= e.movementX * .004; eu.x = THREE.MathUtils.clamp(eu.x - e.movementY * .004, -1.56, 1.56);
+  camera.quaternion.setFromEuler(eu);
+});
+addEventListener('keydown', e => { if (e.code === 'Escape' && dragLook && active) pause(); });
+
+// ---------- Look-at label ----------
+const label = document.getElementById('label');
+const ray = new THREE.Raycaster(); ray.far = 5;
+let shown = null;
+function updateLabel() {
+  ray.setFromCamera({ x: 0, y: 0 }, camera);
+  const hit = ray.intersectObjects(artGroups, true)[0];
+  let art = null;
+  for (let o = hit?.object; o; o = o.parent) if (o.userData.art) { art = o.userData.art; if (hit.distance < 4.5) focusHD(o); break; }
+  if (art !== shown) {
+    shown = art;
+    if (art) label.innerHTML = (art.pick ? '<div class="pick">★ One of my top picks</div>' : '') +
+      `<i>${art.title}</i> &nbsp;·&nbsp; ${art.size}<small>DSC_${art.id} · ${art.desc}</small>`;
+    label.style.opacity = art ? 1 : 0;
+  }
+}
+
+// ---------- Frame Studio ----------
+const studioWall = WALLS.west;
+const studioPos = studioWall.origin.clone().addScaledVector(studioWall.normal, ART_OFF);
+const PICKS = new Set(HANG.filter(p => p.pick).map(p => p.id));
+const SIZES = [['30 cm', .3], ['45 cm', .45], ['60 cm', .6], ['75 cm', .75], ['90 cm', .9], ['120 cm', 1.2]];
+const CROPS = [['Original 3:2', '3:2'], ['Portrait 2:3', '2:3'], ['Portrait 4:5', '4:5'], ['Square', '1:1']];
+const MATS = [['None', 'none'], ['White', WHITE], ['Cream', CREAM], ['Black', BLACK]];
+const FRAME_COLOURS = [['Default', null], ['Black', 0x161616], ['White', 0xf3f3f0], ['Natural oak', 0xd2a676], ['Walnut', 0x6a452b],
+  ['Navy', 0x22304d], ['Sage', 0x95a88f], ['Forest green', 0x2f4a3a], ['Burgundy', 0x6e1f2b], ['Charcoal', 0x55595e], ['Gold', 0xc9a14b]];
+const WALL_COLOURS = [['Gallery white', 0xf4f2ee], ['Warm stone', 0xece4d6], ['Greige', 0xcfc8bd], ['Sage green', 0x667a66],
+  ['Deep navy', 0x26344c], ['Charcoal', 0x3a3b3d], ['Terracotta', 0xb86b4b], ['Dusty pink', 0xd9b8b0], ['Forest green', 0x2f4a3a]];
+const studio = { id: '0538', style: 'oak', size: .45, crop: '3:2', fx: .5, mat: WHITE, matW: 8, bw: false, frameColor: null, wall: 0xf4f2ee, height: 155 };
+let studioOpen = false, studioArt = null, studioSpot = null;
+
+const studioPanelMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.4, RH), new THREE.MeshStandardMaterial({ color: studio.wall, roughness: .95 }));
+studioPanelMesh.position.copy(studioWall.origin).addScaledVector(studioWall.normal, .006); studioPanelMesh.position.y = RH / 2;
+studioPanelMesh.rotation.y = rotFor(studioWall.normal); scene.add(studioPanelMesh);
+{
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 220;
+  const g = c.getContext('2d'); g.fillStyle = '#2a2a2a'; g.textAlign = 'center';
+  g.font = '86px Georgia'; g.fillText('FRAME STUDIO', 512, 100);
+  g.font = 'italic 44px Georgia'; g.fillStyle = '#555';
+  g.fillText(isMobile ? 'tap Customise to try any photo in any frame' : 'press E to try any photo in any frame', 512, 175);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .41), new THREE.MeshBasicMaterial({ map: t, transparent: true }));
+  sign.position.copy(studioPos).addScaledVector(studioWall.normal, .002); sign.position.y = 3.45;
+  sign.rotation.y = rotFor(studioWall.normal); scene.add(sign);
+}
+
+function disposeTree(o) {
+  o.traverse(m => {
+    m.geometry?.dispose();
+    for (const mat of [].concat(m.material || [])) { if (mat.map && mat.map !== GRAIN) mat.map.dispose(); mat.dispose(); }
+  });
+}
+
+function rebuildStudio() {
+  if (studioArt) {
+    scene.remove(studioArt); artGroups.splice(artGroups.indexOf(studioArt), 1);
+    if (hdActive.includes(studioArt)) hdActive.splice(hdActive.indexOf(studioArt), 1);
+    disposeTree(studioArt);
+  }
+  const st = STYLES[studio.style], aspect = ASPECTS[studio.crop];
+  const plain = st.canvas || st.float || st.acrylic;
+  const colour = FRAME_COLOURS.find(([, c]) => c === studio.frameColor);
+  studioArt = buildArt({
+    id: studio.id, style: studio.style, crop: studio.crop, fx: studio.fx, bw: studio.bw,
+    w: aspect >= 1 ? studio.size : studio.size * aspect,
+    mat: plain || studio.mat === 'none' ? 0 : studio.matW / 100, matColor: studio.mat,
+    frameColor: plain ? null : studio.frameColor, colorName: plain || studio.frameColor === null ? null : colour[0].toLowerCase(),
+    pick: PICKS.has(studio.id),
+  });
+  const pos = studioPos.clone(); pos.y = studio.height / 100;
+  studioArt.position.copy(pos); studioArt.rotation.y = rotFor(studioWall.normal);
+  scene.add(studioArt); artGroups.push(studioArt);
+
+  const radius = Math.hypot(studioArt.userData.outer.w, studioArt.userData.outer.h) / 2;
+  if (!studioSpot) studioSpot = spotOn(pos.clone(), studioWall.normal, radius, 1.6);
+  placePool(studioSpot, pos, studioWall.normal, radius);
+  studioPanelMesh.material.color.set(studio.wall);
+
+  const a = studioArt.userData.art, pw = Math.round((aspect >= 1 ? studio.size : studio.size * aspect) * 100);
+  document.getElementById('st-spec').innerHTML =
+    `<b>${a.title}</b> · DSC_${a.id}${a.pick ? ' ★ top pick' : ''}<br>Print ${pw} × ${Math.round(pw / aspect)} cm · ${a.size} framed<br>${a.desc}`;
+  document.getElementById('st-fcolor-row').style.display = plain ? 'none' : '';
+  document.getElementById('st-mat-row').style.display = plain ? 'none' : '';
+  document.getElementById('st-fx-row').style.display = studio.crop === '3:2' ? 'none' : '';
+  document.getElementById('st-hv').textContent = `${studio.height} cm`;
+  document.getElementById('st-matwv').textContent = `${studio.matW} cm`;
+}
+
+function optionRow(el, list, key, swatch = false) {
+  for (const [name, value] of list) {
+    const b = document.createElement('button'); b.title = name;
+    if (swatch) { if (value === null) b.className = 'def'; else b.style.background = '#' + value.toString(16).padStart(6, '0'); }
+    else b.textContent = name;
+    if (studio[key] === value) b.classList.add('sel');
+    b.addEventListener('click', () => {
+      studio[key] = value; for (const x of el.children) x.classList.toggle('sel', x === b); rebuildStudio();
+    });
+    el.appendChild(b);
+  }
+}
+
+function buildStudioUI() {
+  const photos = document.getElementById('st-photos');
+  for (const id of Object.keys(images).sort()) {
+    const c = document.createElement('canvas'); c.width = 120; c.height = 80;
+    const img = images[id], s = Math.max(120 / img.width, 80 / img.height);
+    c.getContext('2d').drawImage(img, (120 - img.width * s) / 2, (80 - img.height * s) / 2, img.width * s, img.height * s);
+    const b = document.createElement('button'); b.title = `${TITLES[id]} (DSC_${id})${PICKS.has(id) ? ' ★' : ''}`;
+    b.style.backgroundImage = `url(${c.toDataURL('image/jpeg', .8)})`;
+    if (id === studio.id) b.classList.add('sel');
+    b.addEventListener('click', () => {
+      studio.id = id; for (const x of photos.children) x.classList.toggle('sel', x === b); rebuildStudio();
+    });
+    photos.appendChild(b);
+  }
+  optionRow(document.getElementById('st-style'), Object.entries(STYLES).map(([k, v]) => [v.name.replace(' frame', ''), k]), 'style');
+  optionRow(document.getElementById('st-fcolor'), FRAME_COLOURS, 'frameColor', true);
+  optionRow(document.getElementById('st-size'), SIZES, 'size');
+  optionRow(document.getElementById('st-crop'), CROPS, 'crop');
+  optionRow(document.getElementById('st-mat'), MATS, 'mat');
+  optionRow(document.getElementById('st-wall'), WALL_COLOURS, 'wall', true);
+  const bind = (id, key, num = true) => {
+    const el = document.getElementById(id); el.value = studio[key];
+    el.addEventListener('input', () => { studio[key] = num ? +el.value : el.checked; rebuildStudio(); });
+  };
+  bind('st-fx', 'fx'); bind('st-matw', 'matW'); bind('st-h', 'height');
+  const bw = document.getElementById('st-bw'); bw.checked = studio.bw;
+  bw.addEventListener('change', () => { studio.bw = bw.checked; rebuildStudio(); });
+  document.getElementById('st-close').addEventListener('click', closeStudio);
+  if (isMobile) document.getElementById('b-studio').addEventListener('touchstart', e => { e.preventDefault(); openStudio(); }, { passive: false });
+}
+
+const studioEl = document.getElementById('studio'), promptEl = document.getElementById('prompt'), bStudio = document.getElementById('b-studio');
+function openStudio() {
+  studioOpen = true; active = false;
+  for (const k in keys) keys[k] = false;
+  Object.assign(touch, { f: 0, s: 0, jump: false });
+  if (controls.isLocked) controls.unlock();
+  touchUI.classList.remove('on');
+  studioEl.classList.add('open');
+  // Stand back from the wall, framed so the panel doesn't cover the picture
+  const side = innerWidth > innerHeight;
+  player.pos.set(-HX + 3.4, 0, side ? -.9 : 0); player.vel.set(0, 0, 0); player.vy = 0;
+  camera.position.set(player.pos.x, player.eye, player.pos.z);
+  camera.quaternion.setFromEuler(new THREE.Euler(side ? -.04 : -.3, Math.PI / 2, 0, 'YXZ'));
+}
+function closeStudio() {
+  studioOpen = false; studioEl.classList.remove('open');
+  if (isMobile) { active = true; touchUI.classList.add('on'); }
+  else if (dragLook) active = true;
+  else controls.lock();
+}
+addEventListener('keydown', e => {
+  if (e.code === 'KeyE' && !e.repeat) {
+    if (studioOpen) closeStudio();
+    else if (active && nearStudio()) openStudio();
+  } else if (e.code === 'Escape' && studioOpen) {
+    studioOpen = false; studioEl.classList.remove('open'); pause();
+  }
+});
+
+const lookDir = new V3();
+function nearStudio() {
+  camera.getWorldDirection(lookDir);
+  return player.pos.x < -HX + 5.5 && Math.abs(player.pos.z) < 3.2 && lookDir.x < -.4;
+}
+function updateStudioPrompt() {
+  const near = active && nearStudio();
+  promptEl.style.display = near && !isMobile ? 'block' : 'none';
+  bStudio.style.display = near && isMobile ? 'flex' : 'none';
+}
+
+// ---------- Photo viewer ----------
+// Original files in Alex's Drive folder, for full-resolution downloads
+const DRIVE_IDS = {
+  '0410': '1yjXQZWitFFe_p_Zet-3ENYRNGkIkqATJ', '0411': '1iZNbEXgvMhXiIVGCUlpLcJ6As0u2TG1N', '0412': '1Gon12UqHbabC0yuqhJPpxcVG9pf9HeeB',
+  '0413': '194hu7yLwWdlEpEFB8tPJKHaBLoVusldF', '0440': '16wXyIT0hFoL9NJt9FKT66sia1nxHk9Mb', '0442': '1ZJcCzzMg4WFv1yw5ph5pFC_j_Ky9lPgJ',
+  '0461': '1tY98qhNLK0-vT2F8bV7DxyeaFUr24stE', '0479': '1hY2WaoQ4iCnS0bR7xLNG_SiqO1xeVPcY', '0481': '1d23qKqYWCH13ZkzjVogEkc4RPFQWx2bK',
+  '0484': '1X8MejhiPBjWg14OUr_05SGJp6ljkbxOs', '0487': '1CCLvbGpvqs14dBl5WZkF43bMCA62c9Ah', '0491': '1ioTMXVtEEDROl07W4UzBpohDUXnqbHTs',
+  '0535': '1lk3xNEB_bCUXCF6FlnCcW9ilqXtJUsu_', '0538': '1MS0zHyHmGtvZlijjKim5YFWY6z2takyW', '0585': '1107IwFjdj9T4Rk_T5aXYSiCzGlKYyU1v',
+  '0606': '1Ndd01SsEjqx-eg6G4XYQ0ynHtxzDNHao', '0608': '1V2PB-fBzpzApO9D2az28PLCjzmyr4Hrj', '0610': '1q3suY6D-VEYSConZD8QBzkQW4FTDPANe',
+  '0615': '1e5aA3ZHiG1bv7GKeZo4RGSL9h7ihIOHt', '0625': '1Uv81JSqnGEoalyJAU7YOC9KozLXXlGpy', '0628': '1aMGD6oYnLIR2Vjv_If3eA78hRqYHhIyy',
+  '0629': '1c6pCwIGa-Dg5w89KOuK6MDeG5IDnoen8', '0640': '1ZKZKwowkmAC5Q-xTRsGzdrSzx6QrucpO', '0641': '1C4EaQ3_SA86rZDFHkfTQcPdvbT81qfYA',
+  '0646': '1Va2SitnK9_tEY9qIfRXzzQ8HkvQ2gn_J', '0649': '1qTGv1Ry8wmOdBzc0N-DlC8SEq7EIcTkY', '0650': '1FGnCgGEG2Z1Ckq6BxrRuM0LpwRTcSW-a',
+};
+const RAW_ONLY = new Set(['0413', '0461', '0538']);
+const viewerEl = document.getElementById('viewer');
+let viewerOpen = false;
+
+function artAt(ndc) {
+  ray.setFromCamera(ndc, camera); ray.far = 6;
+  const hit = ray.intersectObjects(artGroups, true)[0];
+  ray.far = 5;
+  for (let o = hit?.object; o; o = o.parent) if (o.userData.art) return o;
+  return null;
+}
+
+// Render a straight-on close-up of a framed piece on its wall, at HD
+const shotCam = new THREE.PerspectiveCamera(30, 1, .05, 30);
+async function framedShot(g) {
+  await focusHD(g);
+  const { w, h } = g.userData.outer, normal = new V3(0, 0, 1).applyQuaternion(g.quaternion);
+  const aspect = innerWidth / Math.max(1, innerHeight - 210);
+  const half = Math.tan(THREE.MathUtils.degToRad(shotCam.fov / 2));
+  const d = Math.max((h * 1.7) / 2 / half, (w * 1.7) / 2 / (half * aspect));
+  shotCam.aspect = aspect; shotCam.updateProjectionMatrix();
+  shotCam.position.copy(g.position).addScaledVector(normal, d); shotCam.lookAt(g.position);
+  const size = renderer.getSize(new THREE.Vector2()), pr = renderer.getPixelRatio();
+  const H = 1400, W = Math.round(H * aspect);
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  renderer.render(scene, shotCam);
+  const url = renderer.domElement.toDataURL('image/jpeg', .92);
+  renderer.setPixelRatio(pr); renderer.setSize(size.x, size.y, false);
+  return url;
+}
+
+let viewerGroup = null;
+async function setViewerMode(framed) {
+  const g = viewerGroup, id = g.userData.art.id, img = document.getElementById('v-img');
+  document.getElementById('v-mode-photo').classList.toggle('sel', !framed);
+  document.getElementById('v-mode-frame').classList.toggle('sel', framed);
+  const save = document.getElementById('v-framed');
+  save.hidden = !framed;
+  if (framed) {
+    const url = await framedShot(g);
+    if (viewerGroup !== g) return;
+    img.src = url; save.href = url; save.download = `Charlie_DSC_${id}_framed.jpg`;
+  } else {
+    img.src = window.PHOTOS[id];
+    loadHD(id).then(i => { if (viewerGroup === g && !document.getElementById('v-mode-frame').classList.contains('sel')) img.src = i.src; }).catch(() => {});
+  }
+}
+document.getElementById('v-mode-photo').addEventListener('click', () => setViewerMode(false));
+document.getElementById('v-mode-frame').addEventListener('click', () => setViewerMode(true));
+
+function openViewer(g) {
+  const art = g.userData.art; viewerGroup = g;
+  viewerOpen = true; active = false;
+  for (const k in keys) keys[k] = false;
+  Object.assign(touch, { f: 0, s: 0, jump: false });
+  if (controls.isLocked) controls.unlock();
+  touchUI.classList.remove('on');
+  document.getElementById('v-title').textContent = `“${art.title}” · Charlie · DSC_${art.id}`;
+  document.getElementById('v-desc').textContent = `On the wall: ${art.size}, ${art.desc}`;
+  const dl = document.getElementById('v-dl');
+  dl.href = `hd/${art.id}.jpg`; dl.download = `Charlie_DSC_${art.id}_by_Alex_Sharp.jpg`;
+  dl.textContent = RAW_ONLY.has(art.id) ? 'Download compressed (with quick edit)' : 'Download compressed';
+  const full = document.getElementById('v-full');
+  full.href = `https://drive.google.com/uc?export=download&id=${DRIVE_IDS[art.id]}`;
+  full.textContent = RAW_ONLY.has(art.id) ? 'Download full resolution (unedited original)' : 'Download full resolution';
+  viewerEl.classList.add('open');
+  setViewerMode(false);
+}
+function closeViewer() {
+  viewerOpen = false; viewerGroup = null; viewerEl.classList.remove('open');
+  if (isMobile) { active = true; touchUI.classList.add('on'); }
+  else if (dragLook) active = true;
+  else controls.lock();
+}
+document.getElementById('v-close').addEventListener('click', closeViewer);
+viewerEl.addEventListener('click', e => { if (e.target === viewerEl) closeViewer(); });
+addEventListener('keydown', e => {
+  if (e.code === 'Escape' && viewerOpen) { viewerOpen = false; viewerEl.classList.remove('open'); pause(); }
+});
+
+// Desktop: click while looking at a photo (crosshair), or a still click in drag-look mode
+let downAt = null;
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0 || !active || isMobile) return;
+  if (controls.isLocked) { const a = artAt({ x: 0, y: 0 }); if (a) openViewer(a); }
+  else downAt = [e.clientX, e.clientY];
+});
+document.addEventListener('mouseup', e => {
+  if (!downAt || !active) return;
+  const still = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 5; downAt = null;
+  if (still) { const a = artAt({ x: e.clientX / innerWidth * 2 - 1, y: -(e.clientY / innerHeight) * 2 + 1 }); if (a) openViewer(a); }
+});
+// Mobile: a quick tap on a photo
+let tapStart = null;
+renderer.domElement.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0]; tapStart = { x: t.clientX, y: t.clientY, t: performance.now(), id: t.identifier };
+}, { passive: true });
+renderer.domElement.addEventListener('touchend', e => {
+  if (!tapStart || !active) return;
+  for (const t of e.changedTouches) if (t.identifier === tapStart.id) {
+    if (Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < 10 && performance.now() - tapStart.t < 350) {
+      const a = artAt({ x: t.clientX / innerWidth * 2 - 1, y: -(t.clientY / innerHeight) * 2 + 1 }); if (a) openViewer(a);
+    }
+    tapStart = null;
+  }
+});
+
+// ---------- Loop ----------
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05);
+  if (active) step(dt);
+  updateLabel();
+  updateStudioPrompt();
+  renderer.render(scene, camera);
+});
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight);
+});
+
+// ---------- Load photos, then hang them ----------
+await Promise.all(Object.entries(window.PHOTOS).map(([id, src]) => new Promise((res, rej) => {
+  const img = new Image(); img.onload = () => { images[id] = img; res(); }; img.onerror = rej; img.src = src;
+})));
+hang();
+buildStudioUI();
+rebuildStudio();
+overlay.dataset.ready = 1;
+document.getElementById('go').textContent = isMobile ? 'TAP TO ENTER' : 'CLICK TO ENTER';
+</script>
+</body>
+</html>
