@@ -209,8 +209,10 @@ const camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth / innerHeight, 0
 camera.rotation.order = 'YXZ';
 
 // Room: 24m x 14m, 4.2m ceiling, with a free-standing partition in the middle.
-const RW = 24, RD = 14, RH = 4.2, HX = RW / 2, HZ = RD / 2;
+const RW = 36, RD = 14, RH = 4.2, HX = RW / 2, HZ = RD / 2;
 const PL = 8, PT = 0.15, PH = 3.2;
+// Free-standing walls down the middle of the room: the original one plus a shorter one in each new wing
+const PARTS = [{ x: 0, len: PL }, { x: -12.5, len: 5 }, { x: 12.5, len: 5 }];
 
 // ---------- Procedural textures ----------
 function floorTexture() {
@@ -263,7 +265,7 @@ const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD), new THREE.MeshSt
 ceiling.rotation.x = Math.PI / 2; ceiling.position.y = RH; scene.add(ceiling);
 
 // Rooflights for a bit of daylight feel
-for (const x of [-7, 0, 7]) {
+for (const x of [-14, -7, 0, 7, 14]) {
   const sky = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.2), new THREE.MeshBasicMaterial({ color: 0xfbfaf6 }));
   sky.rotation.x = Math.PI / 2; sky.position.set(x, RH - .01, x === 0 ? -3.6 : 0); scene.add(sky);
 }
@@ -276,6 +278,11 @@ const WALLS = {
   east:  { origin: new V3(HX, 0, 0), along: new V3(0, 0, 1), normal: new V3(-1, 0, 0), len: RD, h: RH, color: 0x26344c, name: 'Deep navy' },
   partN: { origin: new V3(0, 0, -PT), along: new V3(-1, 0, 0), normal: new V3(0, 0, -1), len: PL, h: PH, color: 0xcfc8bd, name: 'Greige' },
   partS: { origin: new V3(0, 0, PT), along: new V3(1, 0, 0), normal: new V3(0, 0, 1), len: PL, h: PH, color: 0xf4f2ee, name: 'Gallery white' },
+  // West wing wall (the river) and east wing wall (close-ups)
+  riverN: { origin: new V3(-12.5, 0, -PT), along: new V3(-1, 0, 0), normal: new V3(0, 0, -1), len: 5, h: PH, color: 0x8fa3a8, name: 'River blue-grey' },
+  riverS: { origin: new V3(-12.5, 0, PT), along: new V3(1, 0, 0), normal: new V3(0, 0, 1), len: 5, h: PH, color: 0x8fa3a8, name: 'River blue-grey' },
+  closeN: { origin: new V3(12.5, 0, -PT), along: new V3(-1, 0, 0), normal: new V3(0, 0, -1), len: 5, h: PH, color: 0xe9ddd0, name: 'Oatmeal' },
+  closeS: { origin: new V3(12.5, 0, PT), along: new V3(1, 0, 0), normal: new V3(0, 0, 1), len: 5, h: PH, color: 0xe9ddd0, name: 'Oatmeal' },
 };
 const rotFor = n => Math.atan2(n.x, n.z);
 // Distance of the pictures off the wall; light pools sit 5mm behind them, studio paint 10mm behind.
@@ -291,11 +298,14 @@ for (const w of Object.values(WALLS)) {
   skirt.position.copy(w.origin).addScaledVector(w.normal, .008); skirt.position.y = .06;
   skirt.rotation.y = rotFor(w.normal); scene.add(skirt);
 }
-const partCap = new THREE.Mesh(new THREE.BoxGeometry(PL, .01, PT * 2), new THREE.MeshStandardMaterial({ color: 0xe8e4dc }));
-partCap.position.y = PH; scene.add(partCap);
-for (const s of [-1, 1]) {
-  const end = new THREE.Mesh(new THREE.PlaneGeometry(PT * 2, PH), new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: .95 }));
-  end.position.set(s * PL / 2, PH / 2, 0); end.rotation.y = s * Math.PI / 2; scene.add(end);
+const partTrim = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: .95 });
+for (const pt of PARTS) {
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(pt.len, .01, PT * 2), partTrim);
+  cap.position.set(pt.x, PH, 0); scene.add(cap);
+  for (const s of [-1, 1]) {
+    const end = new THREE.Mesh(new THREE.PlaneGeometry(PT * 2, PH), partTrim);
+    end.position.set(pt.x + s * pt.len / 2, PH / 2, 0); end.rotation.y = s * Math.PI / 2; scene.add(end);
+  }
 }
 
 // Benches (you can jump on them)
@@ -311,7 +321,7 @@ function addBench(x, z) {
   g.position.set(x, 0, z); scene.add(g);
   BENCHES.push({ minX: x - 1, maxX: x + 1, minZ: z - .25, maxZ: z + .25, top: .48 });
 }
-addBench(0, -3.6); addBench(0, 3.4);
+addBench(0, -3.6); addBench(0, 3.4); addBench(-12.5, 3.4); addBench(12.5, -3.4);
 
 // ---------- Lighting ----------
 scene.add(new THREE.HemisphereLight(0xfffaf2, 0x8a7460, 2.6));
@@ -486,6 +496,10 @@ const TITLES = {
   '0535': 'Hopeful', '0538': 'Who, Me?', '0585': 'Riverbank', '0606': 'Profile in Autumn', '0608': 'Nose to the Sky',
   '0610': 'Ears Up, Feet Off', '0615': 'The Leap', '0625': 'Hilltop Smile', '0628': 'Far Field', '0629': 'Down the Valley',
   '0640': 'Treat Incoming', '0641': 'A Very Good Sit', '0646': 'Pure Joy', '0649': 'The Big Grin', '0650': 'Grin, Take Two',
+  '0403': 'Trotting Home', '0424': 'Sun on the Whiskers', '0455': 'Ears in the Breeze', '0460': 'Something to Say',
+  '0470': 'Here I Come', '0482': 'Sitting for the Barn', '0502': 'Testing the Water', '0511': 'Paddling',
+  '0522': 'The Wade', '0544': 'Distant Thoughts', '0545': 'One Paw Up', '0559': 'Sky Bark',
+  '0582': 'The Woodland Path', '0599': 'Surveying the Valley', '0611': 'Windswept Grin', '0636': 'Mid-Stride',
 };
 
 // ---------- The hang ----------
@@ -511,6 +525,26 @@ const HANG = [
   { id: '0628', wall: 'south', u: 2, w: .35, style: 'white-gallery', mat: .12 },
   { id: '0629', wall: 'south', u: 5.8, w: .7, style: 'walnut', mat: .06, matColor: BLACK },
   { id: '0646', wall: 'south', u: 9.6, w: 1.1, style: 'black-thin' },
+  // North wall, new wings
+  { id: '0599', wall: 'north', u: -16.4, w: .9, style: 'oak', mat: .08, matColor: CREAM, note: 'quick edit of the original' },
+  { id: '0611', wall: 'north', u: -13.2, w: .8, style: 'acrylic', note: 'quick edit of the original' },
+  { id: '0482', wall: 'north', u: 13.2, w: .7, style: 'white-gallery', mat: .1, note: 'quick edit of the original' },
+  { id: '0636', wall: 'north', u: 16.4, w: 1.0, style: 'canvas', note: 'quick edit of the original' },
+  // South wall, new wings
+  { id: '0403', wall: 'south', u: -16.4, w: .55, style: 'navy', mat: .07, note: 'quick edit of the original' },
+  { id: '0470', wall: 'south', u: -13.2, w: .45, crop: '4:5', style: 'black-thin', mat: .08, fx: .45, note: 'quick edit of the original' },
+  { id: '0455', wall: 'south', u: 13.2, w: .7, style: 'walnut', mat: .08, matColor: CREAM, note: 'quick edit of the original' },
+  { id: '0460', wall: 'south', u: 16.4, w: .6, style: 'silver', mat: .09, bw: true, note: 'quick edit of the original' },
+  // West wing wall: the river
+  { id: '0502', wall: 'riverN', u: -1.2, w: .8, style: 'float', note: 'quick edit of the original' },
+  { id: '0511', wall: 'riverN', u: 1.2, w: .6, style: 'sage', mat: .07, matColor: CREAM, note: 'quick edit of the original' },
+  { id: '0522', wall: 'riverS', u: -1.2, w: .75, style: 'gold', mat: .07, matColor: CREAM, note: 'quick edit of the original' },
+  { id: '0582', wall: 'riverS', u: 1.2, w: .6, style: 'black-thin', mat: .08, note: 'quick edit of the original' },
+  // East wing wall: close-ups
+  { id: '0544', wall: 'closeN', u: -1.2, w: .6, crop: '1:1', style: 'canvas', fx: .36, note: 'quick edit of the original' },
+  { id: '0545', wall: 'closeN', u: 1.2, w: .45, crop: '4:5', style: 'white-gallery', mat: .08, fx: .3, note: 'quick edit of the original' },
+  { id: '0559', wall: 'closeS', u: -1.2, w: .4, crop: '2:3', style: 'oak', mat: .07, fx: .3, note: 'quick edit of the original' },
+  { id: '0424', wall: 'closeS', u: 1.2, w: .45, crop: '4:5', style: 'walnut', mat: .08, fx: .47, note: 'quick edit of the original' },
   // West wall (sage green)
   { id: '0412', wall: 'west', u: -4.6, w: .8, style: 'gold' },
   { id: '0585', wall: 'west', u: 4.6, w: .5, crop: '4:5', style: 'white-gallery', mat: .08, fx: .42 },
@@ -616,7 +650,7 @@ function groundAt(x, z, feetY) {
 function collide(p) {
   p.x = THREE.MathUtils.clamp(p.x, -HX + RADIUS, HX - RADIUS);
   p.z = THREE.MathUtils.clamp(p.z, -HZ + RADIUS, HZ - RADIUS);
-  const boxes = [{ minX: -PL / 2, maxX: PL / 2, minZ: -PT, maxZ: PT, top: PH }, ...BENCHES];
+  const boxes = [...PARTS.map(pt => ({ minX: pt.x - pt.len / 2, maxX: pt.x + pt.len / 2, minZ: -PT, maxZ: PT, top: PH })), ...BENCHES];
   for (const b of boxes) {
     if (p.y >= b.top - .01) continue; // standing on top of it
     const x0 = b.minX - RADIUS, x1 = b.maxX + RADIUS, z0 = b.minZ - RADIUS, z1 = b.maxZ + RADIUS;
@@ -927,8 +961,9 @@ const DRIVE_IDS = {
   '0615': '1e5aA3ZHiG1bv7GKeZo4RGSL9h7ihIOHt', '0625': '1Uv81JSqnGEoalyJAU7YOC9KozLXXlGpy', '0628': '1aMGD6oYnLIR2Vjv_If3eA78hRqYHhIyy',
   '0629': '1c6pCwIGa-Dg5w89KOuK6MDeG5IDnoen8', '0640': '1ZKZKwowkmAC5Q-xTRsGzdrSzx6QrucpO', '0641': '1C4EaQ3_SA86rZDFHkfTQcPdvbT81qfYA',
   '0646': '1Va2SitnK9_tEY9qIfRXzzQ8HkvQ2gn_J', '0649': '1qTGv1Ry8wmOdBzc0N-DlC8SEq7EIcTkY', '0650': '1FGnCgGEG2Z1Ckq6BxrRuM0LpwRTcSW-a',
+  '0403': '1MD_Ix4QSeMDKG1Dk73qttFGWWJaYCVJG', '0424': '1XKwV58jm7AOqkrcH-de0zUL_4aVciBUt', '0455': '1lE3MwQFoHhapBiHVa9s-Fqh4LSaystss', '0460': '14LtoKQaQ0335q8_2bOt5Nmarog5QsONz', '0470': '1LbXvU01y0jD0qcy6EU93_dRRuqb5PcVs', '0482': '1ykCJl6PCemyiwB6XDSMGOM9sHU46M1Nr', '0502': '1Tg_QJtJjOQXfh0gXJeFZf1-kUDVrNE9J', '0511': '1e9Rj03qC93_Ag1qFisSHqj3ccjt077wG', '0522': '12CumemjB0UN8pm6TMp-ufJglXiDu6iaR', '0544': '12z_j9HGsmwBOiDe6QGHty6bX7lYRtO0P', '0545': '1laWXh-nR5kl4AgtupzHB9UpBSMDokbdS', '0559': '1h9MsWmxkx6DPEoaL9gBnWhA8Ys3eIxRi', '0582': '1eyduqzAEn9WmKhuI0G944kwYTh9tv6Jn', '0599': '1Uo7LKwoAK9htZYCblIMthsRNKTjg5nLA', '0611': '1ln8bkimh70SBCHcEyFZKIfByI0SunmbE', '0636': '1155wY2Y1ten7NGpt5e09KHEWuoZfZOpt',
 };
-const RAW_ONLY = new Set(['0413', '0461', '0538']);
+const RAW_ONLY = new Set(['0413', '0461', '0538', '0403', '0424', '0455', '0460', '0470', '0482', '0502', '0511', '0522', '0544', '0545', '0559', '0582', '0599', '0611', '0636']);
 const viewerEl = document.getElementById('viewer');
 let viewerOpen = false;
 
