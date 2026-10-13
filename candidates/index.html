@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Four for the cottage — Charlie, framed</title>
+<style>
+  :root { --ink: #2b2723; --soft: #6f665c; --paper: #f6f1e8; --line: #d9cfc0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 Georgia, 'Times New Roman', serif; }
+  header { max-width: 980px; margin: 0 auto; padding: 48px 24px 8px; }
+  h1 { font-weight: normal; font-size: 40px; letter-spacing: .02em; margin: 0; }
+  .lede { color: var(--soft); font-style: italic; margin: 6px 0 0; max-width: 680px; }
+  h2 { font-weight: normal; font-size: 26px; margin: 0 0 4px; }
+  .sans { font-family: -apple-system, Helvetica, Arial, sans-serif; }
+  .kicker { font: 600 11px/1 -apple-system, Helvetica, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #9a7b3c; }
+
+  /* The wall scene, drawn to scale: 1 cm = --s px */
+  .wallwrap { max-width: 980px; margin: 28px auto 0; padding: 0 24px; }
+  .wall { --s: 2.6px; position: relative; height: calc(300 * var(--s)); border-radius: 3px; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+      repeating-linear-gradient(0deg, transparent 0 calc(22 * var(--s)), rgba(120,100,70,.07) calc(22 * var(--s)) calc(22.6 * var(--s))),
+      linear-gradient(#e8dcc4, #ddcfb3);
+    box-shadow: inset 0 0 60px rgba(90,70,40,.18); }
+  .beam { position: absolute; left: 0; right: 0; top: 0; height: calc(22 * var(--s));
+    background: linear-gradient(#5a4330, #3e2d20); box-shadow: 0 4px 10px rgba(0,0,0,.25); }
+  .beam::after { content: ''; position: absolute; inset: 0; opacity: .25;
+    background: repeating-linear-gradient(90deg, transparent 0 40px, rgba(0,0,0,.35) 40px 41px, transparent 41px 97px, rgba(255,255,255,.12) 97px 98px); }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: calc(12 * var(--s)); background: linear-gradient(#6b5a48, #574837); }
+  .mantel { position: absolute; left: calc(50% - 80 * var(--s)); width: calc(160 * var(--s)); bottom: calc(120 * var(--s));
+    height: calc(14 * var(--s)); background: linear-gradient(#6a4d34, #4b3524); border-radius: 2px; box-shadow: 0 6px 12px rgba(0,0,0,.3); }
+  .hearth { position: absolute; left: calc(50% - 55 * var(--s)); width: calc(110 * var(--s)); bottom: calc(12 * var(--s));
+    height: calc(108 * var(--s)); background: linear-gradient(#cdbd9f, #bba985); border: calc(6 * var(--s)) solid #c8b48e; border-bottom: 0; }
+  .hearth::after { content: ''; position: absolute; left: 18%; right: 18%; bottom: 0; height: 62%; background: #2a221c; border-radius: 40% 40% 0 0 / 30% 30% 0 0; }
+  .walllabel { position: absolute; right: 12px; bottom: calc(14 * var(--s)); font: 12px -apple-system, Helvetica, sans-serif; color: #f2e9da; opacity: .85; }
+  .scalebar { position: absolute; left: 14px; bottom: calc(16 * var(--s)); font: 11px -apple-system, Helvetica, sans-serif; color: #f2e9da; }
+  .scalebar i { display: block; width: calc(50 * var(--s)); height: 4px; background: #f2e9da; margin-bottom: 3px; }
+
+  /* A framed print. Sizes are in cm, scaled by --s */
+  .frame { position: absolute; transform: translate(-50%, -50%);
+    width: calc(var(--fw) * var(--s)); height: calc(var(--fh) * var(--s));
+    padding: calc(var(--mould) * var(--s)); background: var(--fcol);
+    box-shadow: 0 calc(1.2 * var(--s)) calc(3 * var(--s)) rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.15); }
+  .frame.wood { background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 2px, transparent 2px 6px), linear-gradient(var(--fcol), var(--fcol)); }
+  .frame .mount { width: 100%; height: 100%; background: var(--mcol); display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), inset 0 2px 4px rgba(0,0,0,.12); }
+  .frame img { display: block; width: calc(var(--pw) * var(--s)); height: calc(var(--ph) * var(--s)); object-fit: cover;
+    outline: 1px solid rgba(255,255,255,.7); outline-offset: 1px; }
+
+  .cards { max-width: 980px; margin: 0 auto; padding: 24px; display: grid; gap: 22px; }
+  .card { display: grid; grid-template-columns: 320px 1fr; gap: 26px; background: #fffdf8; border: 1px solid var(--line); border-radius: 4px; padding: 22px; }
+  .card .preview { position: relative; height: 300px; background: linear-gradient(#ece2d0, #e2d5bd); border-radius: 3px; }
+  .card .preview .frame { left: 50%; top: 50%; }
+  .spec { display: grid; grid-template-columns: 130px 1fr; gap: 5px 14px; margin: 14px 0; font: 14px/1.45 -apple-system, Helvetica, sans-serif; }
+  .spec dt { color: var(--soft); }
+  .spec dd { margin: 0; }
+  .why { margin: 0; }
+  .where { margin-top: 10px; font: 13px/1.5 -apple-system, Helvetica, sans-serif; color: var(--soft); }
+  .notes { max-width: 980px; margin: 0 auto 60px; padding: 0 24px; font: 14px/1.6 -apple-system, Helvetica, sans-serif; color: #4a433b; }
+  .notes h3 { font: normal 22px Georgia, serif; color: var(--ink); margin: 26px 0 6px; }
+  .notes ul { padding-left: 18px; }
+  .total { display: inline-block; margin-top: 4px; padding: 8px 14px; background: #efe6d6; border-radius: 3px; }
+  .card .preview { cursor: zoom-in; }
+  .runners { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 14px; }
+  .runners .kicker { color: var(--soft); margin-bottom: 10px; }
+  .runners .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+  .runner { font: 13px/1.35 -apple-system, Helvetica, sans-serif; }
+  .runner img { width: 100%; aspect-ratio: 3 / 2; object-fit: contain; background: #efe7d8; border-radius: 2px; cursor: zoom-in; display: block;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2); transition: transform .15s; }
+  .runner img:hover { transform: scale(1.03); }
+  .runner .t { margin: 6px 0 2px; font-family: Georgia, serif; font-size: 15px; }
+  .runner .d { color: var(--soft); font-size: 12px; }
+  button.swap { margin-top: 6px; font: 12px -apple-system, Helvetica, sans-serif; background: #fff; border: 1px solid #b9ab94;
+    border-radius: 14px; padding: 4px 10px; cursor: pointer; color: var(--ink); }
+  button.swap:hover { background: #2b2723; color: #fff; border-color: #2b2723; }
+  .changed { font: 12px -apple-system, Helvetica, sans-serif; color: #9a7b3c; margin-left: 8px; }
+  #lb { position: fixed; inset: 0; background: rgba(20,17,14,.92); display: none; flex-direction: column; align-items: center;
+    justify-content: center; padding: 20px; z-index: 10; color: #f4efe6; }
+  #lb.open { display: flex; }
+  #lb img { max-width: 92vw; max-height: calc(100vh - 240px); object-fit: contain; box-shadow: 0 8px 40px rgba(0,0,0,.6); }
+  #lb .cap { margin-top: 14px; text-align: center; max-width: 720px; }
+  #lb .cap h3 { font-weight: normal; font-size: 24px; margin: 0; }
+  #lb .cap p { margin: 4px 0 0; color: #cfc6b8; font-size: 15px; }
+  #lb .btns { margin-top: 12px; display: flex; gap: 8px; }
+  #lb button { font: 14px -apple-system, Helvetica, sans-serif; padding: 8px 16px; border-radius: 3px; cursor: pointer;
+    background: transparent; color: #f4efe6; border: 1px solid #8c8378; }
+  #lb button.primary { background: #f4efe6; color: #2b2723; border-color: #f4efe6; }
+  #lb button[hidden] { display: none; }
+  footer { text-align: center; color: var(--soft); font-style: italic; padding: 0 0 40px; }
+  @media (max-width: 760px) { .card { grid-template-columns: 1fr; } .wall { --s: 1.15px; } h1 { font-size: 30px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">A Christmas recommendation</div>
+  <h1>Four of Charlie, for the cottage</h1>
+  <p class="lede">My four picks for framing for your parents. They're chosen to suit low beamed ceilings, warm limestone and smaller rooms rather than a white-walled gallery. Every size below is real and drawn to scale.</p>
+  <p class="lede" style="font-style:normal"><b>One of each:</b> the cute one, the magnificent one, the fun one, and the place one.</p>
+</header>
+
+<div class="wallwrap">
+  <div class="wall" id="wall">
+    <div class="beam"></div>
+    <div class="hearth"></div>
+    <div class="mantel"></div>
+    <div class="floor"></div>
+    <div class="scalebar"><i></i>50 cm</div>
+    <div class="walllabel">All four shown together to scale on a cottage wall with an inglenook mantel</div>
+  </div>
+</div>
+
+<section class="cards" id="cards"></section>
+
+<div class="notes">
+  <h3>Why these four, together</h3>
+  <ul>
+    <li><b>One hero, three companions.</b> "Hopeful" is the only big one. The cottage rooms are small and the ceilings low, so one strong piece over the mantel and three modest ones elsewhere will look intentional, not crowded.</li>
+    <li><b>The same mount everywhere.</b> All four use a warm off-white mount, not bright white. It sits kindly against limestone and lime-washed walls, and it ties the set together even when they hang in different rooms.</li>
+    <li><b>Woods that suit old houses.</b> Oak, walnut and a painted sage feel at home with beams and stone, while black or chrome would look modern and cold there. "Lord of the Barn" gets a weathered grey oak to echo the Cotswold stone in the photo.</li>
+    <li><b>Four different Charlies.</b> Cute, magnificent, fun and a sense of place, so the set tells a story rather than repeating one face.</li>
+    <li><b>A mix of shapes.</b> Three landscape frames and one upright. The tall one breaks up the row and fits the narrow spaces cottages are full of, between windows, beams and doorways.</li>
+    <li><b>Standard sizes where possible.</b> The three smaller ones fit off-the-shelf UK frames (40×50 and 30×40 cm, which is the size of the opening). The hero is best done by a framer, or in a ready-made 50×70 cm frame.</li>
+  </ul>
+
+  <h3>Ordering</h3>
+  <ul>
+    <li><b>Print from the full-resolution originals</b> ("Download full resolution" in the gallery). Every photo on this page, crops included, prints at about 250 dpi or better at the size shown, so they'll be sharp.</li>
+    <li>Ask for a <b>matte or lustre (semi-gloss) photo paper</b>. Glossy prints pick up reflections from cottage windows and lamps.</li>
+    <li>Ask for <b>anti-reflective or UV glass</b> on the hero at least, as it's going over the fire and will catch the most light.</li>
+    <li>Mount apertures are usually cut about 5 mm smaller than the print so the edges are held. Any framer will do that automatically.</li>
+    <li>Some runners-up are shown cropped. If you swap one in, ask the printer to crop it the same way, or send Alex a screenshot.</li>
+  </ul>
+</div>
+
+<footer>Photographs by Alex Sharp</footer>
+
+<div id="lb">
+  <img id="lb-img" alt="">
+  <div class="cap"><h3 id="lb-title"></h3><p id="lb-why"></p></div>
+  <div class="btns"><button class="primary" id="lb-use">Use this as the main pick</button><button id="lb-close">Close</button></div>
+</div>
+<script>
+// Each slot keeps its frame, mount, glazing and spot in the house; the photo in it can be swapped.
+// Sizes in cm: pw × ph is the visible print, mount the border, mould the moulding width.
+const SLOTS = [
+  { role: 'The cute one · hero piece', mount: 7.5, mould: 3, fcol: '#c89f6c', wood: true,
+    frame: 'Natural oak, 3 cm flat moulding', glass: 'Anti-reflective glass', long: 45,
+    where: 'Over the mantel in the sitting room, so it is the first thing you see.', wall: { x: 50, y: 42 },
+    picks: [
+      { id: '0535', title: 'Hopeful', pw: 45, ph: 30,
+        why: 'Charlie looking straight down the lens, with soft eyes and a plain green background. This is the classic portrait of the family dog, and the one they will look at most. Big enough to read from across the room without overpowering a low-beamed wall.' },
+      { id: '0538', title: 'Who, Me?', pw: 45, ph: 30,
+        why: 'A head-on close-up with big dark eyes and a slight head tilt. Very sweet; cropped in so his face fills more of the frame.' },
+      { id: '0424', title: 'Sun on the Whiskers', pw: 45, ph: 30,
+        why: 'Backlit by the sun by the river, with every whisker glowing. Warmer and more atmospheric than Hopeful, but his eyes are half in shadow.' },
+      { id: '0545', title: 'One Paw Up', pw: 45, ph: 30,
+        why: 'Gazing up hopefully with one paw lifted, a classic "please?" pose. Very endearing; cropped in so he fills the frame.' },
+      { id: '0455', title: 'Ears in the Breeze', pw: 45, ph: 30,
+        why: 'A close, happy face with one ear caught by the wind. Warm and friendly; the stone wall behind is a nice Cotswold touch.' },
+      { id: '0544', title: 'Distant Thoughts', pw: 45, ph: 30,
+        why: 'A soft, wistful three-quarter portrait. Gentler and more thoughtful than Hopeful, but he is not looking at you.' },
+      { id: '0410', title: 'Sunlit Patience', pw: 45, ph: 30,
+        why: 'Sitting nicely in the sun by the river, waiting for a treat. Edited by Alex; cropped closer so he is not lost in the background.' },
+    ] },
+  { role: 'The magnificent one', mount: 5, mould: 2.5, fcol: '#5e4029', wood: true,
+    frame: 'Dark walnut, 2.5 cm', glass: 'Standard glass', long: 30,
+    where: 'The landing, a bedroom, or a narrow bit of wall between a window and a beam.', wall: { x: 85, y: 50 },
+    picks: [
+      { id: '0608', title: 'Nose to the Sky', pw: 20, ph: 30, fx: 54,
+        why: 'A profile of Charlie gazing up, with the autumn valley melting away behind him. The most "fine art" photo of the lot, and the eye is pin-sharp right down to the catchlight. The upright shape gives the set variety, and the walnut picks up the russet in his coat.' },
+      { id: '0599', title: 'Surveying the Valley', pw: 30, ph: 20,
+        why: 'Charlie from behind, looking out over the rolling valley like he owns it. Grand and very Cotswolds, but you do not see his face, which some people miss in a gift.' },
+      { id: '0606', title: 'Profile in Autumn', pw: 30, ph: 20,
+        why: 'A noble side profile against soft autumn grass, taken moments before Nose to the Sky. A little calmer and more classic, and you see more of his face; landscape rather than upright.' },
+      { id: '0479', title: 'At Rest, On Watch', pw: 30, ph: 20,
+        why: 'Lying regally in the grass, head up, every grey whisker sharp. The sharpest photo in the whole set; calm, dignified magnificence.' },
+      { id: '0611', title: 'Windswept Grin', pw: 30, ph: 20,
+        why: 'A big grin with the whole Cotswold valley rolling out behind him and a moody sky. Grand scenery, cropped in a little to bring him forward.' },
+      { id: '0641', title: 'A Very Good Sit', pw: 20, ph: 30,
+        why: 'Sitting tall and proud, head thrown back, the hills behind. Cropped upright, so it is a straight swap for Nose to the Sky with more of his body and a happier face.' },
+    ] },
+  { role: 'The fun one', mount: 5, mould: 2.5, fcol: '#9caf96', wood: false,
+    frame: 'Painted sage green, 2.5 cm', glass: 'Standard glass', long: 30, wall: { x: 15, y: 63 },
+    where: 'The kitchen. It is the one that will make people laugh while the kettle boils.',
+    picks: [
+      { id: '0610', title: 'Ears Up, Feet Off', pw: 30, ph: 20,
+        why: 'Mid-leap with both ears flying. Pure personality, and sharp even though he is moving. The soft painted sage feels relaxed and country-kitchen, a light contrast to the wooden frames.' },
+      { id: '0615', title: 'The Leap', pw: 20, ph: 30, fx: 32,
+        why: 'The same mad moment, with Charlie stretched tall against the sky. It suits an upright frame, so pick this if you want two portrait-shaped prints.' },
+      { id: '0649', title: 'The Big Grin', pw: 30, ph: 20,
+        why: 'A huge open-mouthed grin, looking right at you. Less action than the leaps, but probably the happiest face in the whole set.' },
+      { id: '0460', title: 'Something to Say', pw: 30, ph: 20,
+        why: 'Mid-bark, straight at the camera, tail up. Loud, funny and very Charlie; the nose is closest to the lens so it looks wonderfully big.' },
+      { id: '0559', title: 'Sky Bark', pw: 20, ph: 30,
+        why: 'Head thrown back in a full howl with his tail curled up. Cropped upright, so it suits a tall frame if you want two portrait shapes.' },
+      { id: '0470', title: 'Here I Come', pw: 20, ph: 30,
+        why: 'Bounding towards you, mouth open, expecting a treat. Cropped upright to cut out the empty grass so it is all about him.' },
+      { id: '0646', title: 'Pure Joy', pw: 30, ph: 20,
+        why: 'Head back, mouth wide open, tail up, the valley behind. Probably the most joyful moment of the walk.' },
+    ] },
+  { role: 'The place one', mount: 10, mould: 2.5, fcol: '#9d968b', wood: true,
+    frame: 'Weathered grey oak, 2.5 cm', glass: 'Standard glass', long: 30,
+    where: 'Hallway or by the front door, where you come in from walks.', wall: { x: 15, y: 37 },
+    picks: [
+      { id: '0484', title: 'Lord of the Barn', pw: 30, ph: 20,
+        why: 'An old Cotswold stone barn under a blue sky, with Charlie standing guard. It belongs in a stone cottage, and the grey oak frame picks up the colour of the stone.' },
+      { id: '0582', title: 'The Woodland Path', pw: 30, ph: 20,
+        why: 'Charlie trotting towards you down a leafy autumn path. Lovely mood, though he is slightly motion-soft, so it is better kept to this smaller size.' },
+      { id: '0522', title: 'The Wade', pw: 30, ph: 20,
+        why: 'Charlie paddling across a clear stream under the trees. A proper country-walk memory; cropped closer so he is not lost in the scenery.' },
+      { id: '0482', title: 'Sitting for the Barn', pw: 30, ph: 20,
+        why: 'Charlie sitting politely in front of the same Cotswold barn, looking up. A calmer version of Lord of the Barn; he is a touch more centred.' },
+      { id: '0502', title: 'Testing the Water', pw: 30, ph: 20,
+        why: 'Peering into the clear river from a rock, about to step in. Lovely light on the water; feels like a real moment on a walk.' },
+      { id: '0636', title: 'Mid-Stride', pw: 30, ph: 20,
+        why: 'Trotting through the valley with his tail up and the hills behind. A "where we walk" photo with plenty of Charlie in it.' },
+      { id: '0625', title: 'Hilltop Smile', pw: 30, ph: 20,
+        why: 'Standing happily in the long grass with the wooded valley behind. Simple and sunny; his whole body and face are clear.' },
+    ] },
+];
+const chosen = SLOTS.map(() => 0); // index of the main pick in each slot
+
+const STD = [[30, 40], [40, 50], [50, 70]];
+function spec(slot, ph) {
+  const p = { ...slot, ...ph, mcol: '#f4efe4' };
+  p.fw = p.pw + 2 * (p.mount + p.mould); p.fh = p.ph + 2 * (p.mount + p.mould);
+  const ow = p.pw + 2 * p.mount, oh = p.ph + 2 * p.mount;
+  const fit = STD.find(([a, b]) => (a === Math.min(ow, oh) && b === Math.max(ow, oh)));
+  const upright = p.ph > p.pw ? ' hung upright' : '';
+  p.standard = fit ? `Off-the-shelf ${fit[0]}×${fit[1]} cm frame${upright}, with a mount cut for a ${Math.min(p.pw, p.ph)}×${Math.max(p.pw, p.ph)} cm print`
+                   : `Framer-made: ${Math.max(ow, oh)}×${Math.min(ow, oh)} cm opening. Or, cheaper: an off-the-shelf 50×70 cm frame with a slightly wider mount`;
+  p.mountName = `Warm off-white, ${p.mount} cm`;
+  return p;
+}
+function frameEl(p, s) {
+  const f = document.createElement('div');
+  f.className = 'frame' + (p.wood ? ' wood' : '');
+  f.style.cssText = `--fw:${p.fw};--fh:${p.fh};--pw:${p.pw};--ph:${p.ph};--mould:${p.mould};--fcol:${p.fcol};--mcol:${p.mcol};` + (s ? `--s:${s}px;` : '');
+  f.innerHTML = `<div class="mount"><img src="img/${p.id}.jpg" alt="${p.title}" style="object-position:${p.fx ?? 50}% 50%"></div>`;
+  return f;
+}
+
+const wall = document.getElementById('wall'), cards = document.getElementById('cards');
+function render() {
+  wall.querySelectorAll('.frame').forEach(f => f.remove());
+  cards.innerHTML = '';
+  const mains = SLOTS.map((sl, i) => spec(sl, sl.picks[chosen[i]]));
+  const s = 270 / Math.max(...SLOTS.flatMap(sl => sl.picks.map(ph => { const p = spec(sl, ph); return Math.max(p.fw, p.fh); })));
+
+  mains.forEach((p, i) => {
+    if (!p.wallHide) {
+      const f = frameEl(p); f.style.left = p.wall.x + '%'; f.style.top = p.wall.y + '%'; f.title = `${p.title}: ${p.fw} × ${p.fh} cm`;
+      wall.appendChild(f);
+    }
+    const c = document.createElement('article'); c.className = 'card';
+    c.innerHTML = `
+      <div class="preview" title="Click to enlarge"></div>
+      <div>
+        <div class="kicker">${i + 1} · ${p.role}${chosen[i] ? '<span class="changed">· swapped from my first pick</span>' : ''}</div>
+        <h2>${p.title}</h2>
+        <div class="sans" style="color:var(--soft);font-size:13px">DSC_${p.id}</div>
+        <dl class="spec">
+          <dt>Print size</dt><dd>${p.pw} × ${p.ph} cm${p.ph > p.pw ? ' (upright)' : ''}</dd>
+          <dt>Framed size</dt><dd><b>${p.fw} × ${p.fh} cm</b></dd>
+          <dt>Frame</dt><dd>${p.frame}</dd>
+          <dt>Mount</dt><dd>${p.mountName}</dd>
+          <dt>Glazing</dt><dd>${p.glass}</dd>
+          <dt>Buying</dt><dd>${p.standard}</dd>
+        </dl>
+        <p class="why">${p.why}</p>
+        <div class="where">📍 ${p.where}</div>
+      </div>
+      <div class="runners"><div class="kicker">Runners-up for this spot · click to enlarge</div><div class="row"></div></div>`;
+    const prev = c.querySelector('.preview');
+    prev.appendChild(frameEl(p, s));
+    prev.addEventListener('click', () => openLB(i, chosen[i]));
+    const row = c.querySelector('.row');
+    SLOTS[i].picks.forEach((ph, k) => {
+      if (k === chosen[i]) return;
+      const r = document.createElement('div'); r.className = 'runner';
+      r.innerHTML = `<img src="img/${ph.id}.jpg" alt="${ph.title}" style="object-position:${ph.fx ?? 50}% 50%">
+        <div class="t">${ph.title}${k === 0 ? ' <span class="d">(my first pick)</span>' : ''}</div>
+        <div class="d">DSC_${ph.id} · ${ph.pw} × ${ph.ph} cm${ph.ph > ph.pw ? ', upright' : ''}</div>
+        <button class="swap">Make this the main pick</button>`;
+      r.querySelector('img').addEventListener('click', () => openLB(i, k));
+      r.querySelector('button').addEventListener('click', () => swapIn(i, k));
+      row.appendChild(r);
+    });
+    cards.appendChild(c);
+  });
+}
+function swapIn(i, k) { chosen[i] = k; render(); }
+
+const lb = document.getElementById('lb');
+let lbAt = null;
+function openLB(i, k) {
+  const ph = SLOTS[i].picks[k]; lbAt = [i, k];
+  document.getElementById('lb-img').src = `img/${ph.id}.jpg`;
+  document.getElementById('lb-title').textContent = `${ph.title} · DSC_${ph.id}`;
+  document.getElementById('lb-why').textContent = ph.why;
+  document.getElementById('lb-use').hidden = k === chosen[i];
+  lb.classList.add('open');
+}
+const closeLB = () => lb.classList.remove('open');
+document.getElementById('lb-close').addEventListener('click', closeLB);
+document.getElementById('lb-use').addEventListener('click', () => { swapIn(...lbAt); closeLB(); });
+lb.addEventListener('click', e => { if (e.target === lb) closeLB(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+render();
+</script>
+</body>
+</html>
